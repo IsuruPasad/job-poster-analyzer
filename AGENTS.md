@@ -11,7 +11,7 @@ Next.js (App Router) + TypeScript + Tailwind app that turns a photo of a job-pos
 ## Request flow
 
 1. `app/page.tsx` — user uploads a poster image (`app/components/ImageUploader.tsx`), then POSTs it to `/api/extract`.
-2. `app/api/extract/route.ts` — sends the image + a prompt to Gemini (`gemini-2.0-flash`, falling back through `MODELS` on 404/429), parses the JSON reply into a `JobDetails` object, normalizes `jobCategory`/`jobRole` against the taxonomy (see below), and returns it.
+2. `app/api/extract/route.ts` — sends the (client-resized, see Performance below) image + a prompt to Gemini, trying models fastest-first through `MODELS` and falling back on 404/429, parses the JSON reply into a `JobDetails` object, normalizes `jobCategory`/`jobRole` against the taxonomy (see below), and returns it.
 3. The client stores the result in `sessionStorage` (`jobData`, `extractionSuccess`, `extractionError`) and navigates to `/job-form`.
 4. `app/job-form/page.tsx` — reads `sessionStorage`, renders an editable form pre-filled with the extracted data. If the poster advertises the same role across multiple locations, one tab per location is shown (see below); otherwise the form renders directly with no tabs. Fields the AI couldn't determine are highlighted green and left for manual entry. **The "Post Job" submit button is currently a no-op placeholder** — there is no backend persistence yet.
 
@@ -78,6 +78,14 @@ A single poster can advertise the same role across several branches/cities (e.g.
 - `app/job-form/JobLocationForm.tsx` is the single definition of what a location's form looks like — every tab renders this same component against its own slice of `jobForms`, so per-location edits (e.g. a different salary at one branch, or picking a different district/town) never leak into other tabs. Don't fork this component per-tab or duplicate its JSX inline in the page — add fields here and every tab picks it up.
 - Employer info (name/website) is part of each location's field map too (per the page's current field layout), so it's independently editable per tab, not shared globally.
 - **Poster title format:** each tab's `posterTitle` is generated client-side in `app/job-form/page.tsx` as `"{jobRole} - {town || district}"` (e.g. "Accounts Assistant - Colombo"), or just `jobRole` when that tab has no district/town. This overrides Gemini's own free-text title whenever jobRole matched the taxonomy; Gemini's original title is kept only as a fallback for the (rare) case jobRole didn't match anything. This only runs once at load time — editing jobRole/district/town afterward does not regenerate the title, so a manual edit to the Title field is never clobbered.
+
+## Performance: extraction latency
+
+Two deliberate levers keep the image-to-JSON round trip fast:
+
+- **Client-side image downscaling** (`lib/image.ts`, called from `app/page.tsx` right before upload): phone-camera poster photos are downscaled to a max 1600px on the long edge (JPEG, quality 0.85) before ever leaving the browser — vision-model latency (and upload time) scales with image size, and poster text stays legible well below typical raw photo resolutions. Falls back to the original file untouched if decoding fails (e.g. most browsers can't decode HEIC via `createImageBitmap`) or the image is already small enough — never blocks the upload.
+- **`MODELS` in `app/api/extract/route.ts` is ordered fastest-first**, not just by fallback preference: `gemini-2.5-flash-lite` (Google's low-latency tier, built for exactly this kind of simple structured extraction) is tried first, falling back through `gemini-2.0-flash-lite` → `gemini-2.0-flash` → `gemini-flash-latest` only on 404 (model unavailable on this key) or 429 (rate-limited). If revisiting this list, prefer whatever Google's current lowest-latency Flash-Lite tier is — check `ai.google.dev` for the current model lineup, since naming shifts over time (e.g. 2.5 → 3.x Flash-Lite).
+- **Heads up, not yet acted on:** `@google/generative-ai` (this project's Gemini SDK, `package.json`) was declared end-of-life in August 2025 in favor of the unified `@google/genai` package — it still works (Google's backend stays wire-compatible), but gets no further bug fixes. Worth migrating eventually, but it's a separate, riskier change from the above (different import/call surface) and wasn't part of the speed work that added this note.
 
 ## Environment & running
 

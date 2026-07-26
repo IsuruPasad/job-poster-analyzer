@@ -57,8 +57,10 @@ Rules:
 - Keep all extracted text faithful to what is shown, just translated to English (except jobCategory/jobRole/district/town/requiredEducation, which must match the taxonomies verbatim)`;
 }
 
-// Try models in order — fall back if one is unavailable or rate-limited
-const MODELS = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-flash-latest"];
+// Try models in order, fastest first — fall back to a heavier/older model only if one is
+// unavailable (404, e.g. not enabled on this API key) or rate-limited (429). Flash-Lite tiers
+// are built for exactly this kind of low-latency structured extraction task.
+const MODELS = ["gemini-2.5-flash-lite", "gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-flash-latest"];
 
 export async function POST(req: NextRequest) {
   try {

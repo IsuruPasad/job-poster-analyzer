@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ImageUploader from "./components/ImageUploader";
 import Loader from "./components/Loader";
 import { ApiResponse } from "@/types/job";
+import { resizeImageForUpload } from "@/lib/image";
 import { ScanSearch, Sparkles } from "lucide-react";
 
 type AppState = "idle" | "loading";
@@ -24,8 +25,9 @@ export default function Home() {
     setAppState("loading");
 
     try {
+      const fileToUpload = await resizeImageForUpload(selectedFile);
       const formData = new FormData();
-      formData.append("image", selectedFile);
+      formData.append("image", fileToUpload);
 
       const res = await fetch("/api/extract", {
         method: "POST",
