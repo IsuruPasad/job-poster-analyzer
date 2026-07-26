@@ -8,7 +8,7 @@ export interface FormField {
   id: string;
   label: string;
   placeholder: string;
-  type?: "textarea" | "select" | "range";
+  type?: "textarea" | "select" | "range" | "date";
   options?: string[];
   /** For type "range": the two field ids and placeholders, e.g. [salaryFrom, salaryTo]. */
   rangeIds?: [string, string];
@@ -29,7 +29,7 @@ export const ABOUT_JOB_FIELDS: FormField[] = [
     rangeIds: ["salaryFrom", "salaryTo"],
     rangePlaceholders: ["From (e.g. LKR 50,000)", "To (e.g. LKR 80,000)"],
   },
-  { id: "applicationDeadline", label: "Application Deadline", placeholder: "e.g. 30-06-2025" },
+  { id: "applicationDeadline", label: "Application Deadline", placeholder: "", type: "date" },
 ];
 
 export const ABOUT_EMPLOYER_FIELDS: FormField[] = [
@@ -202,6 +202,22 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
                       className={fieldClasses(toId)}
                     />
                   </div>
+                </div>
+              );
+            }
+
+            if (field.type === "date") {
+              return (
+                <div key={field.id}>
+                  <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                    {field.label}
+                  </label>
+                  <input
+                    type="date"
+                    value={data[field.id] || ""}
+                    onChange={(e) => onChange(field.id, e.target.value)}
+                    className={fieldClasses(field.id)}
+                  />
                 </div>
               );
             }

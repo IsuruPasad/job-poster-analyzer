@@ -65,6 +65,10 @@ Required Education is the same kind of fixed enum as Job Type, sourced from `lib
 
 Salary is captured as a range, not one free-text field: `JobDetails.salaryFrom` / `salaryTo` (`types/job.ts`, both `string | null`). A stated range splits across both; a single fixed figure (not a range) goes in `salaryFrom` only, `salaryTo` stays `null` — never the reverse. Rendered as two side-by-side text inputs via `JobLocationForm`'s generic `type: "range"` field support (`ABOUT_JOB_FIELDS`, `rangeIds: [fromId, toId]`) — no fixed value list here (unlike Job Type/Education), just free text, since salary figures/currency vary too much to enumerate.
 
+## Domain: application deadline (date picker)
+
+`applicationDeadline` (`types/job.ts`) is stored as an ISO `YYYY-MM-DD` string or `null` — the exact format a native `<input type="date">` requires to display a value and open the browser's calendar picker. `lib/date.ts` exports `isIsoDate(value)`, used both server-side (`app/api/extract/route.ts`, to null out anything Gemini returns that isn't already exact ISO) and client-side (`app/job-form/page.tsx`, same defensive check on load). The extraction prompt is given today's date at request time (computed per-request in `buildExtractionPrompt()`, not baked in at module load) so it can resolve relative deadlines ("within 2 weeks") or a day/month stated without a year; if it can't resolve a full date, it must return `null` rather than guess. Rendered via `JobLocationForm`'s `type: "date"` field support (`ABOUT_JOB_FIELDS`) — a plain native date input, no custom calendar widget.
+
 ## Domain: multi-location job postings
 
 A single poster can advertise the same role across several branches/cities (e.g. "Cashier needed — Colombo, Kandy, Galle"). `JobDetails.locations: JobLocation[]` (`types/job.ts`, `JobLocation = { district: string | null; town: string | null }`) holds every distinct location the extraction detected — `[]` if none, one entry for the normal single-location case, multiple entries when the poster explicitly lists more than one.

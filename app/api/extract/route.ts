@@ -5,10 +5,13 @@ import { JOB_CATEGORIES, matchCategory, matchRole, findCategoryByRole } from "@/
 import { DISTRICTS, matchDistrict, matchTown, findDistrictByTown } from "@/lib/locations";
 import { JOB_TYPES, matchJobType } from "@/lib/jobTypes";
 import { EDUCATION_LEVELS, matchEducation } from "@/lib/education";
+import { isIsoDate } from "@/lib/date";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-const EXTRACTION_PROMPT = `You are an expert at reading job posting posters and extracting structured information from them. The poster content may be written in English, Sinhala, or Tamil — or a mix of these languages.
+function buildExtractionPrompt(): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return `You are an expert at reading job posting posters and extracting structured information from them. The poster content may be written in English, Sinhala, or Tamil — or a mix of these languages. Today's date is ${today} — use it to resolve any relative deadline ("within 2 weeks", "apply by end of this month") or a deadline missing its year.
 
 Analyze the image carefully and extract the following details:
 
@@ -26,7 +29,7 @@ Return ONLY a valid JSON object (no markdown, no code blocks, no extra text) wit
   "requiredEducation": "The single closest matching education level, mapped from whatever the poster states (e.g. O/L -> Ordinary Level, A/L -> Advanced Level, Bachelor's/BSc/BA -> Degree, Master's/MSc/MBA -> Master, PhD -> Doctorate, HND/Higher National Diploma -> Higher Diploma) to one of exactly these values: ${EDUCATION_LEVELS.join(", ")} — copied exactly, or null if not mentioned",
   "salaryFrom": "The lower bound of the monthly salary range as stated (numbers/currency as shown, e.g. 'LKR 50,000'). If the poster gives a single fixed salary rather than a range, put it here. Null if no salary is mentioned",
   "salaryTo": "The upper bound of the monthly salary range as stated, or null if the poster gives only a single fixed salary (not a range) or no salary at all",
-  "applicationDeadline": "Application deadline date as stated, or null if not mentioned"
+  "applicationDeadline": "Application deadline date converted to ISO format YYYY-MM-DD (e.g. 2025-06-30), or null if not mentioned or not resolvable to a full date"
 }
 
 Job category / job role taxonomy (JSON array of { category, roles }) — jobCategory and jobRole MUST be chosen from here:
@@ -47,10 +50,12 @@ Rules:
 - jobType must be copied exactly from its list above (e.g. "Contractual", not "Contract") — never invent a variation, and use null if the poster doesn't clearly indicate one of those exact types
 - requiredEducation must be mapped to the closest exact value in its list above (e.g. "O/L" -> "Ordinary Level") — never return the poster's own wording or an abbreviation, and use null if no education requirement is mentioned or it doesn't map to any of those values
 - salaryFrom/salaryTo: a stated range (e.g. "50,000 - 80,000") splits across both; a single fixed figure goes in salaryFrom only, with salaryTo null — never put a single figure in salaryTo alone
+- applicationDeadline must be a full YYYY-MM-DD date — resolve day/month-only or relative deadlines using today's date above; if it can't be resolved to a specific date, use null rather than guessing
 - For other fields not found in the poster, use null
 - Translate any non-English content to English in your response
 - posterTitle and description should always be generated in English
 - Keep all extracted text faithful to what is shown, just translated to English (except jobCategory/jobRole/district/town/requiredEducation, which must match the taxonomies verbatim)`;
+}
 
 // Try models in order — fall back if one is unavailable or rate-limited
 const MODELS = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-flash-latest"];
@@ -94,11 +99,12 @@ export async function POST(req: NextRequest) {
 
     let lastError: Error | null = null;
     let text: string | null = null;
+    const extractionPrompt = buildExtractionPrompt();
 
     for (const modelName of MODELS) {
       try {
         const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent([EXTRACTION_PROMPT, imagePart]);
+        const result = await model.generateContent([extractionPrompt, imagePart]);
         text = result.response.text().trim();
         break;
       } catch (err) {
@@ -194,7 +200,7 @@ export async function POST(req: NextRequest) {
       requiredEducation: matchEducation(parsed.requiredEducation as string | null),
       salaryFrom: (parsed.salaryFrom as string | null) ?? null,
       salaryTo: (parsed.salaryTo as string | null) ?? null,
-      applicationDeadline: (parsed.applicationDeadline as string | null) ?? null,
+      applicationDeadline: isIsoDate(parsed.applicationDeadline) ? parsed.applicationDeadline : null,
     };
 
     return NextResponse.json({ success: true, data: jobData });

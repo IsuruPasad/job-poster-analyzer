@@ -8,6 +8,7 @@ import { matchCategory, matchRole, findCategoryByRole } from "@/lib/jobCategorie
 import { matchDistrict, matchTown, findDistrictByTown } from "@/lib/locations";
 import { matchJobType } from "@/lib/jobTypes";
 import { matchEducation } from "@/lib/education";
+import { isIsoDate } from "@/lib/date";
 import JobLocationForm from "./JobLocationForm";
 
 const EMPTY_JOB: JobDetails = {
@@ -81,6 +82,10 @@ export default function JobFormPage() {
     // falls back to blank so the dropdown never shows a selection outside the fixed list.
     base.jobType = matchJobType(base.jobType) || "";
     base.requiredEducation = matchEducation(base.requiredEducation) || "";
+
+    // The date input only renders a value in exact YYYY-MM-DD format — anything else
+    // (e.g. a pre-date-picker cached value) is dropped rather than shown broken/blank-but-wrong.
+    base.applicationDeadline = isIsoDate(base.applicationDeadline) ? base.applicationDeadline : "";
 
     // Gemini's own generated title — kept only as a fallback for when jobRole couldn't be
     // matched to the taxonomy, since "{jobRole} - {location}" needs a real jobRole to build.
