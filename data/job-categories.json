@@ -1,0 +1,692 @@
+[
+  {
+    "category": "Accounting & Finance",
+    "roles": [
+      "Accountant",
+      "Accounts Assistant",
+      "Accounts Clerk",
+      "Accounts Executive",
+      "Accounts Manager / Assistant Manager",
+      "Accounts Trainee",
+      "Auditor",
+      "Book keeper",
+      "Finance Executive",
+      "Tax Consultants / Officers",
+      "Other Accounting & Finance"
+    ]
+  },
+  {
+    "category": "Analysts",
+    "roles": [
+      "Business Analysts",
+      "Data Analysts",
+      "Digital Marketing Analysts",
+      "Market Research Analysts",
+      "Quality Checkers/Analysts",
+      "Trainee Analysts",
+      "Other Analysts"
+    ]
+  },
+  {
+    "category": "Apparel and Garment",
+    "roles": [
+      "Apparel and Garment Machine Operator",
+      "Apparel and Garment Quality Checker",
+      "Cutting Officer",
+      "Garment worker",
+      "Pattern Maker",
+      "Production Operator",
+      "Tailor",
+      "Other Apparel and Garment"
+    ]
+  },
+  {
+    "category": "Architecture",
+    "roles": [
+      "Exterior Designer",
+      "Interior Designer",
+      "Senior Architect",
+      "Trainee Architect",
+      "Other Architect"
+    ]
+  },
+  {
+    "category": "Banking and Financial Services",
+    "roles": [
+      "Banking & Finance Assistant",
+      "Banking & Finance Branch Manager / Assistant Manager",
+      "Banking & Finance Executive",
+      "Banking & Finance Manager / Assistant Manager",
+      "Gold Loan Officer",
+      "Trainee Banking and Financial Services",
+      "Other Banking and Financial Services"
+    ]
+  },
+  {
+    "category": "Beauty & Hairdressing",
+    "roles": [
+      "Ayurveda Therapist",
+      "Beauty Advisor",
+      "Beauty Therapist",
+      "Hairdresser",
+      "Make-up Artist",
+      "Nail Artist",
+      "Trainee Beautician",
+      "Other Beautician"
+    ]
+  },
+  {
+    "category": "Building and Construction",
+    "roles": [
+      "Auto AC Electrician",
+      "Building and Construction labourers",
+      "Carpenter",
+      "Electrical Technician",
+      "Electrician",
+      "Fitter",
+      "Mason",
+      "Painter",
+      "Plumber",
+      "Project Manager / Assistant Manager",
+      "Quantity Surveyor",
+      "Safety Officer",
+      "Site Assistant",
+      "Technical Officer",
+      "Tilers",
+      "Welder",
+      "Other Building Construction Worker"
+    ]
+  },
+  {
+    "category": "Business Development",
+    "roles": [
+      "Business Development Executive",
+      "Business Development Manager / Assistant Manager",
+      "Business Relationship Manager / Assistant Manager",
+      "Team Lead - Business Development",
+      "Other Business Development"
+    ]
+  },
+  {
+    "category": "Business Operations",
+    "roles": [
+      "Business Operations Assistant",
+      "Business Operations Executive",
+      "Business Operations Manager / Assistant Manager",
+      "Business Operations Team Lead",
+      "Other Business Operations"
+    ]
+  },
+  {
+    "category": "Call Centre",
+    "roles": [
+      "Call Centre Assistant",
+      "Call Centre Executive",
+      "Call Centre Manager / Assistant Manager",
+      "Call Centre Officer",
+      "Call Centre Team Lead",
+      "Call Centre Trainee"
+    ]
+  },
+  {
+    "category": "Cashier",
+    "roles": []
+  },
+  {
+    "category": "Chef",
+    "roles": [
+      "Baker",
+      "Commi",
+      "Executive Chef",
+      "Head Chef",
+      "Hot/Cold Kitchen Chef",
+      "Pastry Chef",
+      "Salad Bar Helper",
+      "Sous Chef",
+      "Sushi Chef",
+      "Trainee Chef",
+      "Other Chef"
+    ]
+  },
+  {
+    "category": "Cleaner",
+    "roles": []
+  },
+  {
+    "category": "Clerk",
+    "roles": []
+  },
+  {
+    "category": "Collection and Recoveries",
+    "roles": [
+      "Cash Collector",
+      "Recovery Manager / Assistant Manager",
+      "Recovery Officer",
+      "Other Collection and Recovery"
+    ]
+  },
+  {
+    "category": "Consultant",
+    "roles": []
+  },
+  {
+    "category": "Content Writers",
+    "roles": [
+      "Assignment Writer",
+      "Book Writers",
+      "Content Writers",
+      "News Paper Editor",
+      "Other Writers"
+    ]
+  },
+  {
+    "category": "Cook",
+    "roles": [
+      "Caterer",
+      "Indian Cook",
+      "Kottu and Rotty Maker",
+      "Restaurant Cook",
+      "Rice and Curry Cook",
+      "Trainee Cook",
+      "Other Cook"
+    ]
+  },
+  {
+    "category": "Counsellor",
+    "roles": []
+  },
+  {
+    "category": "Crew member",
+    "roles": []
+  },
+  {
+    "category": "Customer Service",
+    "roles": [
+      "Customer Relationship Officer",
+      "Customer Service Coordinator",
+      "Customer Service Executive",
+      "Customer Service Officer",
+      "Customer Support Executive",
+      "Help Desk Executive",
+      "Public Relations Officer",
+      "Team Lead - Customer Service",
+      "Technical Support Executive",
+      "Other Customer Service"
+    ]
+  },
+  {
+    "category": "Data Entry",
+    "roles": [
+      "Computer Type Setter",
+      "Data Entry Operator"
+    ]
+  },
+  {
+    "category": "Delivery Rider",
+    "roles": [
+      "Courier Delivery Rider",
+      "Food Delivery Rider",
+      "Grocery Delivery Rider",
+      "Other Delivery Rider"
+    ]
+  },
+  {
+    "category": "Designer",
+    "roles": [
+      "Fashion Designer",
+      "Jewellery Designer",
+      "Other Designers"
+    ]
+  },
+  {
+    "category": "Digital Marketing",
+    "roles": [
+      "Digital Creative Designer",
+      "Digital Marketing Executive",
+      "Digital Marketing Manager / Assistant Manager",
+      "Influencer",
+      "SEO Specialist / Manager",
+      "Social Media Executive",
+      "Social Media Manager / Assistant Manager"
+    ]
+  },
+  {
+    "category": "Domestic Jobs",
+    "roles": [
+      "Baby Sitter",
+      "Care Giver",
+      "Domestic Cleaner",
+      "Domestic Cook",
+      "Elder Care",
+      "Gardner",
+      "House Keeper",
+      "House Maid",
+      "Live-in Maid",
+      "Other Domestic Jobs"
+    ]
+  },
+  {
+    "category": "Driver",
+    "roles": [
+      "Ambulance Driver",
+      "Bus Driver",
+      "Chauffeur",
+      "Commercial Vehicle Driver",
+      "Heavy Vehicle Driver",
+      "Light Vehicle Driver",
+      "Lorry Driver",
+      "Private Driver",
+      "School Bus Driver",
+      "Other Driver"
+    ]
+  },
+  {
+    "category": "Editor",
+    "roles": [
+      "Newspaper Editor",
+      "Photo Editor",
+      "Video Editor",
+      "Other Editor"
+    ]
+  },
+  {
+    "category": "Education and Training",
+    "roles": [
+      "Academic Coordinator",
+      "Academic staff",
+      "Commerce Teacher",
+      "Educational Coordinator",
+      "Educational Psychologist",
+      "English Teacher",
+      "Individual Tuition Teacher",
+      "Language Instructor",
+      "Lecturer",
+      "Maths Teacher",
+      "Music Teacher",
+      "Non Academic",
+      "Online Tutor",
+      "Physical Education (PE) Teacher",
+      "Preschool Teacher",
+      "Primary School Teacher",
+      "Public Speaking Coach",
+      "Science Teacher",
+      "Secondary School Teacher",
+      "Sinhala Teacher",
+      "Special Education Teacher",
+      "Tamil Teacher",
+      "Teaching Assistant",
+      "Trainee Teacher",
+      "Trainer",
+      "University Lecturer",
+      "Vocational Trainer",
+      "Other Teacher"
+    ]
+  },
+  {
+    "category": "Engineering",
+    "roles": [
+      "Assistant Engineer",
+      "Automobile Engineer",
+      "Civil Engineer",
+      "Design Engineer",
+      "Electrical Engineer",
+      "Engineer",
+      "Mechanical Engineer",
+      "Sound & Audio Engineer",
+      "Other Engineer"
+    ]
+  },
+  {
+    "category": "Event Planner & Coordinators",
+    "roles": []
+  },
+  {
+    "category": "Factory and Manufacturing",
+    "roles": [
+      "Factory Assistant",
+      "Factory Laborer",
+      "Factory Manager / Assistant Manager",
+      "Factory Operations Helper",
+      "Factory Supervisor",
+      "Porter",
+      "Other Factory and Manufacturing"
+    ]
+  },
+  {
+    "category": "Fire Fighter",
+    "roles": []
+  },
+  {
+    "category": "Florist",
+    "roles": []
+  },
+  {
+    "category": "Freelance and NGO Worker",
+    "roles": []
+  },
+  {
+    "category": "Government Jobs",
+    "roles": []
+  },
+  {
+    "category": "HR and Recruitments",
+    "roles": [
+      "HR Assistant",
+      "HR Executive",
+      "HR Intern",
+      "HR Manager / Assistant Manager",
+      "HR Trainee",
+      "Learning and Development Executive",
+      "Recruiter",
+      "Other HR and Recruitment"
+    ]
+  },
+  {
+    "category": "Helper",
+    "roles": []
+  },
+  {
+    "category": "Hospital and Healthcare",
+    "roles": [
+      "Assistant Pharmacist",
+      "Ayurvedic Doctor",
+      "Dentist",
+      "Doctor",
+      "Hospital and Healthcare Trainee",
+      "Lab Assistant",
+      "Medical Documentation Specialist",
+      "Medical Laboratory Technician",
+      "Medical Officer",
+      "Medical Representative",
+      "Nurse",
+      "Nutritionist",
+      "Pharmacist",
+      "Physician",
+      "Pre-Intern Medical Officer",
+      "Trainee Pharmacist",
+      "Other Pharmacist",
+      "Other Hospitals and Healthcare"
+    ]
+  },
+  {
+    "category": "Hotel and Hospitality",
+    "roles": [
+      "Banquet Manager / Assistant Manager",
+      "Bar Assistant",
+      "Bartender",
+      "Hotel Manager / Assistant Manager",
+      "Hotel and Hospitality Trainee",
+      "Kitchen Helper",
+      "Room Assistant",
+      "Room Boy",
+      "Steward",
+      "Waiter",
+      "Other Hotel and Hospitality Staff"
+    ]
+  },
+  {
+    "category": "IT and Network Industry",
+    "roles": [
+      "Analyst Programmer",
+      "Android & iOS Developer",
+      "Developer",
+      "Graphic Designer",
+      "Hardware Engineer",
+      "Hardware Technician",
+      "IT Coordinator",
+      "IT Help Desk Technician",
+      "IT Support Specialist",
+      "IT Technician",
+      "IT and Network Industry Trainee",
+      "Network Administrator",
+      "Network Engineer",
+      "Project Manager / Assistant Manager",
+      "Software Developer",
+      "Software Engineer",
+      "Web Designer",
+      "Web Developer",
+      "Other Hardware and Network Engineer",
+      "Other IT Engineer"
+    ]
+  },
+  {
+    "category": "Internships & Trainees",
+    "roles": [
+      "Internships",
+      "Management Trainee"
+    ]
+  },
+  {
+    "category": "Legal",
+    "roles": [
+      "Corporate Lawyer",
+      "Court Clerk",
+      "Lawyer",
+      "Legal Assistant",
+      "Legal Counsellor",
+      "Legal Secretary",
+      "Other Legal"
+    ]
+  },
+  {
+    "category": "Mechanic",
+    "roles": [
+      "Auto Mechanic",
+      "Electrical Mechanic",
+      "Factory Mechanic",
+      "Motor Mechanic",
+      "Other Mechanic"
+    ]
+  },
+  {
+    "category": "Merchandiser",
+    "roles": []
+  },
+  {
+    "category": "Office Administration and Operations",
+    "roles": [
+      "Admin Assistant",
+      "Admin Clerk",
+      "Admin Coordinator",
+      "Admin Executive",
+      "Admin Manager / Assistant Manager",
+      "Admin Officer",
+      "Admin Trainee",
+      "Office Administrator",
+      "Office Assistant",
+      "Receptionist",
+      "School Administrator",
+      "Secretary",
+      "Other Office Administrator"
+    ]
+  },
+  {
+    "category": "Operator",
+    "roles": [
+      "CCTV Operator",
+      "Forklift Truck Operator",
+      "Heavy Machinery Operator",
+      "Machine Operator",
+      "Sewing Operator",
+      "Other Operator"
+    ]
+  },
+  {
+    "category": "Other",
+    "roles": []
+  },
+  {
+    "category": "Packing Officer",
+    "roles": []
+  },
+  {
+    "category": "Photography and Videography",
+    "roles": [
+      "Camera Operator",
+      "Photographer",
+      "Trainee Photography and Videography",
+      "Video Producer",
+      "Videographer",
+      "Other Photography and Videography"
+    ]
+  },
+  {
+    "category": "Procurement and Purchasing",
+    "roles": [
+      "Procurement Assistant",
+      "Procurement Manager / Assistant Manager",
+      "Procurement Officer",
+      "Purchasing Officer",
+      "Other Procurement and Purchasing"
+    ]
+  },
+  {
+    "category": "Production and Operations",
+    "roles": [
+      "Maintenance Executive",
+      "Maintenance Manager / Assistant Manager",
+      "Production Assistant",
+      "Production Executive",
+      "Production Line / Manufacturing Operator",
+      "Production Manager / Assistant Manager",
+      "Production Supervisor",
+      "Quality Controller",
+      "Other Production and Operations"
+    ]
+  },
+  {
+    "category": "Restaurant and Cafe Staff",
+    "roles": [
+      "Barista",
+      "Cafe Worker",
+      "Restaurant Manager / Assistant Manager",
+      "Restuarant Waiter",
+      "Other Restaurant Staff"
+    ]
+  },
+  {
+    "category": "Retail and Showroom",
+    "roles": [
+      "Customer Service Representative",
+      "Retail Manager / Assistant Manager",
+      "Showroom Executive",
+      "Showroom Manager / Assistant Manager",
+      "Showroom Supervisor",
+      "Supermarket Manager / Assistant Manager",
+      "Supermarket Supervisor",
+      "Other Retail and Showroom"
+    ]
+  },
+  {
+    "category": "Sales And Marketing",
+    "roles": [
+      "Area & Regional Sales Managers / Assistant Manager",
+      "Brand Executive",
+      "Brand Manager / Assistant Manager",
+      "Brand Promoter",
+      "Email Marketing Specialist",
+      "Field Sales Executive",
+      "In house Sales Executive",
+      "Key-Account Manager",
+      "Lead Generation Specialist",
+      "Marketing Executive",
+      "Sales & Marketing Manager / Assistant Manager",
+      "Sales Assistant",
+      "Sales Associate",
+      "Sales Executive",
+      "Sales Representative",
+      "Sales Support Executive",
+      "Showroom Sales Executive",
+      "Technical Sales Officer",
+      "Trainee Sales And Marketing",
+      "Wealth Planner",
+      "Other Sales And Marketing"
+    ]
+  },
+  {
+    "category": "Security and Military",
+    "roles": [
+      "Security OIC",
+      "Security Officer",
+      "Security Supervisor",
+      "Other Security / Military"
+    ]
+  },
+  {
+    "category": "Shipping and Logistics",
+    "roles": [
+      "Compliance Officer",
+      "Export & Import Coordinator",
+      "Export and Import Executive",
+      "Export and Import Manager / Assistant Manager",
+      "Freight Forwarder",
+      "Logistic Executive",
+      "Logistic Manager / Assistant Manager",
+      "Supply Chain Coordinator",
+      "Supply Chain Manager / Assistant Manager",
+      "Transportation Manager / Assistant Manager",
+      "Wharf Clerk",
+      "Other Shipping and Logistics"
+    ]
+  },
+  {
+    "category": "Sports and Wellness",
+    "roles": [
+      "Gym Couch",
+      "Life Guard",
+      "Nutritionist",
+      "Personal Training Instructor",
+      "Sports Instructor",
+      "Other Sports and Wellness"
+    ]
+  },
+  {
+    "category": "Stores and Warehouse",
+    "roles": [
+      "Assistant Store Keeper",
+      "Inventory Controler",
+      "Store Assitant",
+      "Store Keeper",
+      "Store Manager / Assistant Manager",
+      "Store/Warehouse Executive",
+      "Warehouse Assistant",
+      "Warehouse Executive",
+      "Warehouse Manager / Assistant Manager",
+      "Other Stores and Warehouse"
+    ]
+  },
+  {
+    "category": "Supervisor",
+    "roles": []
+  },
+  {
+    "category": "Technician",
+    "roles": [
+      "AC Technician",
+      "Auto Electrical Technician",
+      "Automobile Technician",
+      "Maintenance Technician",
+      "Trainee Technician",
+      "Other Technician"
+    ]
+  },
+  {
+    "category": "Translator",
+    "roles": []
+  },
+  {
+    "category": "Travel And Ticketing",
+    "roles": [
+      "Reservations Executive",
+      "Reservations Manager / Assistant Manager",
+      "Ticketing & Reservations officers",
+      "Ticketing Agent",
+      "Ticketing Executive",
+      "Ticketing Manager / Assistant Manager",
+      "Tour Guide",
+      "Tour Operator",
+      "Travel Agent",
+      "Travel Consultants"
+    ]
+  }
+]

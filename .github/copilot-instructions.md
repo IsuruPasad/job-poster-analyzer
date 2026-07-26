@@ -1,0 +1,1 @@
+Before making any change in this repository, read `AGENTS.md` at the repository root first — it documents the project structure, the request flow, the job category/role domain model, and known conventions/gotchas (Node version, taxonomy source-of-truth file, etc.). Follow its guidance over any general assumption about this stack.

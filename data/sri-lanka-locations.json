@@ -1,0 +1,267 @@
+[
+  {
+    "district": "Colombo",
+    "towns": [
+      "Colombo",
+      "Dehiwala",
+      "Mount Lavinia",
+      "Moratuwa",
+      "Nugegoda",
+      "Maharagama",
+      "Sri Jayawardenepura Kotte",
+      "Kaduwela",
+      "Homagama",
+      "Kesbewa",
+      "Ratmalana",
+      "Kolonnawa",
+      "Battaramulla"
+    ]
+  },
+  {
+    "district": "Gampaha",
+    "towns": [
+      "Gampaha",
+      "Negombo",
+      "Ja-Ela",
+      "Wattala",
+      "Kelaniya",
+      "Kadawatha",
+      "Minuwangoda",
+      "Nittambuwa",
+      "Divulapitiya",
+      "Ragama",
+      "Kiribathgoda",
+      "Katunayake",
+      "Veyangoda"
+    ]
+  },
+  {
+    "district": "Kalutara",
+    "towns": [
+      "Kalutara",
+      "Panadura",
+      "Beruwala",
+      "Aluthgama",
+      "Horana",
+      "Matugama",
+      "Wadduwa",
+      "Bandaragama"
+    ]
+  },
+  {
+    "district": "Kandy",
+    "towns": [
+      "Kandy",
+      "Peradeniya",
+      "Katugastota",
+      "Gampola",
+      "Nawalapitiya",
+      "Wattegama",
+      "Akurana",
+      "Pilimathalawa"
+    ]
+  },
+  {
+    "district": "Matale",
+    "towns": [
+      "Matale",
+      "Dambulla",
+      "Galewela",
+      "Sigiriya",
+      "Ukuwela"
+    ]
+  },
+  {
+    "district": "Nuwara Eliya",
+    "towns": [
+      "Nuwara Eliya",
+      "Hatton",
+      "Talawakele",
+      "Nanu Oya",
+      "Ginigathhena",
+      "Ragala"
+    ]
+  },
+  {
+    "district": "Galle",
+    "towns": [
+      "Galle",
+      "Hikkaduwa",
+      "Ambalangoda",
+      "Baddegama",
+      "Elpitiya",
+      "Karapitiya",
+      "Unawatuna"
+    ]
+  },
+  {
+    "district": "Matara",
+    "towns": [
+      "Matara",
+      "Weligama",
+      "Akuressa",
+      "Dickwella",
+      "Kamburupitiya",
+      "Mirissa"
+    ]
+  },
+  {
+    "district": "Hambantota",
+    "towns": [
+      "Hambantota",
+      "Tangalle",
+      "Tissamaharama",
+      "Ambalantota",
+      "Beliatta"
+    ]
+  },
+  {
+    "district": "Jaffna",
+    "towns": [
+      "Jaffna",
+      "Chavakachcheri",
+      "Point Pedro",
+      "Nallur",
+      "Kopay"
+    ]
+  },
+  {
+    "district": "Kilinochchi",
+    "towns": [
+      "Kilinochchi",
+      "Paranthan"
+    ]
+  },
+  {
+    "district": "Mannar",
+    "towns": [
+      "Mannar",
+      "Pesalai",
+      "Nanattan"
+    ]
+  },
+  {
+    "district": "Vavuniya",
+    "towns": [
+      "Vavuniya",
+      "Nedunkeni"
+    ]
+  },
+  {
+    "district": "Mullaitivu",
+    "towns": [
+      "Mullaitivu",
+      "Puthukkudiyiruppu"
+    ]
+  },
+  {
+    "district": "Batticaloa",
+    "towns": [
+      "Batticaloa",
+      "Kattankudy",
+      "Eravur",
+      "Kaluwanchikudy"
+    ]
+  },
+  {
+    "district": "Ampara",
+    "towns": [
+      "Ampara",
+      "Kalmunai",
+      "Sainthamaruthu",
+      "Akkaraipattu",
+      "Sammanthurai",
+      "Uhana"
+    ]
+  },
+  {
+    "district": "Trincomalee",
+    "towns": [
+      "Trincomalee",
+      "Kinniya",
+      "Kantale",
+      "Mutur"
+    ]
+  },
+  {
+    "district": "Kurunegala",
+    "towns": [
+      "Kurunegala",
+      "Kuliyapitiya",
+      "Narammala",
+      "Wariyapola",
+      "Pannala",
+      "Mawathagama"
+    ]
+  },
+  {
+    "district": "Puttalam",
+    "towns": [
+      "Puttalam",
+      "Chilaw",
+      "Wennappuwa",
+      "Marawila",
+      "Anamaduwa",
+      "Nattandiya"
+    ]
+  },
+  {
+    "district": "Anuradhapura",
+    "towns": [
+      "Anuradhapura",
+      "Kekirawa",
+      "Thambuttegama",
+      "Medawachchiya",
+      "Mihintale"
+    ]
+  },
+  {
+    "district": "Polonnaruwa",
+    "towns": [
+      "Polonnaruwa",
+      "Kaduruwela",
+      "Medirigiriya",
+      "Hingurakgoda"
+    ]
+  },
+  {
+    "district": "Badulla",
+    "towns": [
+      "Badulla",
+      "Bandarawela",
+      "Haputale",
+      "Welimada",
+      "Passara",
+      "Mahiyanganaya"
+    ]
+  },
+  {
+    "district": "Monaragala",
+    "towns": [
+      "Monaragala",
+      "Wellawaya",
+      "Bibile",
+      "Kataragama"
+    ]
+  },
+  {
+    "district": "Ratnapura",
+    "towns": [
+      "Ratnapura",
+      "Embilipitiya",
+      "Balangoda",
+      "Pelmadulla",
+      "Eheliyagoda"
+    ]
+  },
+  {
+    "district": "Kegalle",
+    "towns": [
+      "Kegalle",
+      "Mawanella",
+      "Rambukkana",
+      "Warakapola",
+      "Ruwanwella"
+    ]
+  }
+]

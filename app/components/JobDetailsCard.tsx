@@ -26,8 +26,8 @@ function Field({ icon, label, value, highlight }: FieldProps) {
   return (
     <div
       className={`flex items-start gap-3 p-4 rounded-xl transition-colors ${highlight
-          ? "bg-indigo-50 border border-indigo-100"
-          : "bg-gray-50 border border-gray-100"
+        ? "bg-indigo-50 border border-indigo-100"
+        : "bg-gray-50 border border-gray-100"
         }`}
     >
       <div className={`mt-0.5 flex-shrink-0 ${highlight ? "text-indigo-600" : "text-gray-500"}`}>
@@ -108,7 +108,11 @@ export default function JobDetailsCard({ data }: JobDetailsCardProps) {
           <Field
             icon={<Banknote size={16} />}
             label="Salary"
-            value={data.salary}
+            value={
+              data.salaryFrom && data.salaryTo
+                ? `${data.salaryFrom} - ${data.salaryTo}`
+                : data.salaryFrom || data.salaryTo
+            }
           />
           <Field
             icon={<CalendarDays size={16} />}

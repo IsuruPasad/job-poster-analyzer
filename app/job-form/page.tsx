@@ -4,50 +4,34 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { JobDetails } from "@/types/job";
 import { ScanSearch, Sparkles, ArrowLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { matchCategory, matchRole, findCategoryByRole } from "@/lib/jobCategories";
+import { matchDistrict, matchTown, findDistrictByTown } from "@/lib/locations";
+import { matchJobType } from "@/lib/jobTypes";
+import { matchEducation } from "@/lib/education";
+import JobLocationForm from "./JobLocationForm";
 
 const EMPTY_JOB: JobDetails = {
   posterTitle: "",
   jobRole: "",
   jobCategory: null,
-  location: null,
+  locations: [],
   employerName: "",
   employerWebsite: null,
   description: "",
   jobType: null,
   requiredExperience: null,
   requiredEducation: null,
-  salary: null,
+  salaryFrom: null,
+  salaryTo: null,
   applicationDeadline: null,
 };
 
-interface FormField {
-  id: keyof JobDetails;
-  label: string;
-  placeholder: string;
-  type?: "textarea";
-}
-
-const ABOUT_JOB_FIELDS: FormField[] = [
-  { id: "jobCategory", label: "Job Category", placeholder: "e.g. IT & Software, Sales & Marketing" },
-  { id: "location", label: "Location", placeholder: "e.g. Colombo, Kandy" },
-  { id: "jobRole", label: "Job Role", placeholder: "e.g. Software Engineer, Sales Executive" },
-  { id: "posterTitle", label: "Title for the Ad", placeholder: "e.g. Driver for hire in Colombo" },
-  { id: "description", label: "Description", placeholder: "Describe the job in detail", type: "textarea" },
-  { id: "jobType", label: "Job Type", placeholder: "e.g. Full Time, Part Time, Contract" },
-  { id: "requiredExperience", label: "Required Work Experience (years)", placeholder: "e.g. 2+ years, No experience required" },
-  { id: "requiredEducation", label: "Required Education", placeholder: "e.g. A/L, Diploma, Bachelor's Degree" },
-  { id: "salary", label: "Salary per Month", placeholder: "e.g. LKR 50,000 – 80,000" },
-  { id: "applicationDeadline", label: "Application Deadline", placeholder: "e.g. 30-06-2025" },
-];
-
-const ABOUT_EMPLOYER_FIELDS: FormField[] = [
-  { id: "employerName", label: "Employer", placeholder: "Company or employer name" },
-  { id: "employerWebsite", label: "Employer Website", placeholder: "e.g. https://www.example.com" },
-];
-
 export default function JobFormPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState<Record<string, string>>({});
+  // One flat field map per detected location. A single-location (or no-location) poster
+  // is just an array of length 1, rendered without a tab bar.
+  const [jobForms, setJobForms] = useState<Record<string, string>[]>([]);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [extractionSuccess, setExtractionSuccess] = useState<boolean | null>(null);
   const [extractionError, setExtractionError] = useState<string>("");
   const [mounted, setMounted] = useState(false);
@@ -69,29 +53,72 @@ export default function JobFormPage() {
       }
     }
 
-    // Flatten JobDetails into a string map for the form
-    const flat: Record<string, string> = {};
+    // Flatten every JobDetails field except `locations` into a shared string map —
+    // each location tab starts as a copy of this, with its own `district`/`town` values.
+    const base: Record<string, string> = {};
     (Object.keys(EMPTY_JOB) as (keyof JobDetails)[]).forEach((key) => {
+      if (key === "locations") return;
       const val = job[key];
-      flat[key] = val != null ? String(val) : "";
+      base[key] = val != null ? String(val) : "";
     });
-    setFormData(flat);
+
+    // Normalize against the category/role taxonomy — extracted data should already be an
+    // exact match, but this keeps stale cached values (or a category/role rename) from
+    // producing a dropdown selection that doesn't exist.
+    let category = matchCategory(base.jobCategory) || "";
+    let role = matchRole(category, base.jobRole) || "";
+    if (!role && base.jobRole) {
+      const inferredCategory = findCategoryByRole(base.jobRole);
+      if (inferredCategory) {
+        category = inferredCategory;
+        role = matchRole(inferredCategory, base.jobRole) || "";
+      }
+    }
+    base.jobCategory = category;
+    base.jobRole = role;
+
+    // Same defensive normalization for jobType/requiredEducation — an unmatched/stale value
+    // falls back to blank so the dropdown never shows a selection outside the fixed list.
+    base.jobType = matchJobType(base.jobType) || "";
+    base.requiredEducation = matchEducation(base.requiredEducation) || "";
+
+    // Gemini's own generated title — kept only as a fallback for when jobRole couldn't be
+    // matched to the taxonomy, since "{jobRole} - {location}" needs a real jobRole to build.
+    const fallbackTitle = base.posterTitle;
+
+    const detectedLocations = job.locations && job.locations.length > 0 ? job.locations : [{ district: null, town: null }];
+    setJobForms(
+      detectedLocations.map((loc) => {
+        // Same taxonomy normalization as jobCategory/jobRole above — guards against stale
+        // cached values (or a district/town rename) producing an unknown dropdown selection.
+        let district = matchDistrict(loc.district) || "";
+        let town = matchTown(district, loc.town) || "";
+        if (!town && loc.town) {
+          const inferredDistrict = findDistrictByTown(loc.town);
+          if (inferredDistrict) {
+            district = inferredDistrict;
+            town = matchTown(inferredDistrict, loc.town) || "";
+          }
+        }
+
+        // Title format: "{jobRole} - {location}", or just "{jobRole}" without a location.
+        const location = town || district;
+        const posterTitle = base.jobRole ? (location ? `${base.jobRole} - ${location}` : base.jobRole) : fallbackTitle;
+
+        return { ...base, district, town, posterTitle };
+      })
+    );
+    setActiveTabIndex(0);
     setMounted(true);
   }, []);
 
-  const handleChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: value }));
+  const updateActiveForm = (id: string, value: string) => {
+    setJobForms((prev) => prev.map((form, i) => (i === activeTabIndex ? { ...form, [id]: value } : form)));
   };
 
-  const isEmpty = (id: string) => !formData[id] || formData[id].trim() === "";
-
-  const fieldClasses = (id: string) =>
-    `w-full px-3 py-2.5 rounded-lg border text-sm text-gray-800 focus:outline-none focus:ring-2 transition-colors ${isEmpty(id)
-      ? "bg-green-50 border-green-300 focus:ring-green-300 placeholder-green-400"
-      : "bg-white border-gray-300 focus:ring-indigo-300 placeholder-gray-400"
-    }`;
-
   if (!mounted) return null;
+
+  const activeForm = jobForms[activeTabIndex] || {};
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/20">
@@ -157,69 +184,26 @@ export default function JobFormPage() {
         </div>
 
         <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-          {/* About the Job */}
-          <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-              <h2 className="text-base font-bold text-gray-800">About the Job</h2>
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              {ABOUT_JOB_FIELDS.map((field) =>
-                field.type === "textarea" ? (
-                  <div key={field.id}>
-                    <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                      {field.label}
-                    </label>
-                    <textarea
-                      rows={6}
-                      placeholder={field.placeholder}
-                      value={formData[field.id] || ""}
-                      onChange={(e) => handleChange(field.id, e.target.value)}
-                      className={`${fieldClasses(field.id)} resize-y`}
-                    />
-                    <p className="text-xs text-gray-400 mt-1 text-right">
-                      {formData[field.id]?.length ?? 0}/5000
-                    </p>
-                  </div>
-                ) : (
-                  <div key={field.id}>
-                    <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                      {field.label}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={field.placeholder}
-                      value={formData[field.id] || ""}
-                      onChange={(e) => handleChange(field.id, e.target.value)}
-                      className={fieldClasses(field.id)}
-                    />
-                  </div>
-                )
-              )}
-            </div>
-          </section>
-
-          {/* About the Employer */}
-          <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-              <h2 className="text-base font-bold text-gray-800">About the Employer</h2>
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              {ABOUT_EMPLOYER_FIELDS.map((field) => (
-                <div key={field.id}>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                    {field.label}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={field.placeholder}
-                    value={formData[field.id] || ""}
-                    onChange={(e) => handleChange(field.id, e.target.value)}
-                    className={fieldClasses(field.id)}
-                  />
-                </div>
+          {/* Location tabs — only shown when the poster advertises this role across multiple locations */}
+          {jobForms.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {jobForms.map((form, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveTabIndex(idx)}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${idx === activeTabIndex
+                    ? "bg-indigo-600 border-indigo-600 text-white"
+                    : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
+                    }`}
+                >
+                  {form.town || form.district || `Location ${idx + 1}`}
+                </button>
               ))}
             </div>
-          </section>
+          )}
+
+          <JobLocationForm data={activeForm} onChange={updateActiveForm} />
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 pb-10">

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Reminder: if this change added or modified domain knowledge, project structure, requirements, or technical/architectural details, update AGENTS.md (repo root) now to reflect it, unless this edit was to AGENTS.md itself.\"}}'",
+            "statusMessage": "Checking if AGENTS.md needs updating..."
+          }
+        ]
+      }
+    ]
+  }
+}
