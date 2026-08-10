@@ -3,12 +3,13 @@ import { getCategoryNames, getRolesForCategory } from "@/lib/jobCategories";
 import { getDistrictNames, getTownsForDistrict } from "@/lib/locations";
 import { JOB_TYPES } from "@/lib/jobTypes";
 import { EDUCATION_LEVELS } from "@/lib/education";
+import { isValidSriLankanPhone } from "@/lib/phone";
 
 export interface FormField {
   id: string;
   label: string;
   placeholder: string;
-  type?: "textarea" | "select" | "range" | "date";
+  type?: "textarea" | "select" | "range" | "date" | "tel";
   options?: string[];
   /** For type "range": the two field ids and placeholders, e.g. [salaryFrom, salaryTo]. */
   rangeIds?: [string, string];
@@ -30,6 +31,12 @@ export const ABOUT_JOB_FIELDS: FormField[] = [
     rangePlaceholders: ["From (e.g. LKR 50,000)", "To (e.g. LKR 80,000)"],
   },
   { id: "applicationDeadline", label: "Application Deadline", placeholder: "", type: "date" },
+  {
+    id: "applicationPhone",
+    label: "Applications Receive Phone Number",
+    placeholder: "e.g. 0771234567",
+    type: "tel",
+  },
 ];
 
 export const ABOUT_EMPLOYER_FIELDS: FormField[] = [
@@ -69,10 +76,12 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
 
   const isEmpty = (id: string) => !data[id] || data[id].trim() === "";
 
-  const fieldClasses = (id: string) =>
-    `w-full px-3 py-2.5 rounded-lg border text-sm text-gray-800 focus:outline-none focus:ring-2 transition-colors ${isEmpty(id)
-      ? "bg-green-50 border-green-300 focus:ring-green-300 placeholder-green-400"
-      : "bg-white border-gray-300 focus:ring-indigo-300 placeholder-gray-400"
+  const fieldClasses = (id: string, invalid = false) =>
+    `w-full px-3 py-2.5 rounded-lg border text-sm text-gray-800 focus:outline-none focus:ring-2 transition-colors ${invalid
+      ? "bg-red-50 border-red-300 focus:ring-red-300 placeholder-red-400"
+      : isEmpty(id)
+        ? "bg-green-50 border-green-300 focus:ring-green-300 placeholder-green-400"
+        : "bg-white border-gray-300 focus:ring-indigo-300 placeholder-gray-400"
     }`;
 
   return (
@@ -202,6 +211,30 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
                       className={fieldClasses(toId)}
                     />
                   </div>
+                </div>
+              );
+            }
+
+            if (field.type === "tel") {
+              const value = data[field.id] || "";
+              const invalid = value.trim() !== "" && !isValidSriLankanPhone(value);
+              return (
+                <div key={field.id}>
+                  <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                    {field.label}
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder={field.placeholder}
+                    value={value}
+                    onChange={(e) => onChange(field.id, e.target.value)}
+                    className={fieldClasses(field.id, invalid)}
+                  />
+                  {invalid && (
+                    <p className="text-xs text-red-600 mt-1">
+                      Enter a valid Sri Lankan phone number, e.g. 0771234567 or +94771234567.
+                    </p>
+                  )}
                 </div>
               );
             }

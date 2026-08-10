@@ -20,6 +20,8 @@ export interface JobDetails {
   salaryFrom: string | null;
   salaryTo: string | null;
   applicationDeadline: string | null;
+  /** Phone number for applicants to call — never extracted from the poster, always entered manually. */
+  applicationPhone: string | null;
 }
 
 export interface ExtractResponse {

@@ -203,6 +203,7 @@ export async function POST(req: NextRequest) {
       salaryFrom: (parsed.salaryFrom as string | null) ?? null,
       salaryTo: (parsed.salaryTo as string | null) ?? null,
       applicationDeadline: isIsoDate(parsed.applicationDeadline) ? parsed.applicationDeadline : null,
+      applicationPhone: null,
     };
 
     return NextResponse.json({ success: true, data: jobData });

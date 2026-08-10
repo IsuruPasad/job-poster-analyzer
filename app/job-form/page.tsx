@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { JobDetails } from "@/types/job";
+import { IkmanCredentials, IkmanSession } from "@/types/auth";
 import { ScanSearch, Sparkles, ArrowLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { matchCategory, matchRole, findCategoryByRole } from "@/lib/jobCategories";
 import { matchDistrict, matchTown, findDistrictByTown } from "@/lib/locations";
 import { matchJobType } from "@/lib/jobTypes";
 import { matchEducation } from "@/lib/education";
 import { isIsoDate } from "@/lib/date";
+import { isValidEmail } from "@/lib/email";
 import JobLocationForm from "./JobLocationForm";
 
 const EMPTY_JOB: JobDetails = {
@@ -25,6 +27,7 @@ const EMPTY_JOB: JobDetails = {
   salaryFrom: null,
   salaryTo: null,
   applicationDeadline: null,
+  applicationPhone: null,
 };
 
 export default function JobFormPage() {
@@ -33,6 +36,14 @@ export default function JobFormPage() {
   // is just an array of length 1, rendered without a tab bar.
   const [jobForms, setJobForms] = useState<Record<string, string>[]>([]);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
+  // Ikman.lk login — one shared value for the whole page, not per-location like jobForms.
+  // Kept in memory only (never sessionStorage) since it's a plaintext password.
+  const [credentials, setCredentials] = useState<IkmanCredentials>({ email: "", password: "" });
+  // Result of POSTing those credentials to /api/ikman-auth. "Post Job" stays disabled until this is "success".
+  const [authStatus, setAuthStatus] = useState<"idle" | "authenticating" | "success" | "error">("idle");
+  const [authError, setAuthError] = useState<string>("");
+  // Bearer token from ikman.lk's real login endpoint, sent along with the post-listing request.
+  const [authSession, setAuthSession] = useState<IkmanSession | null>(null);
   const [extractionSuccess, setExtractionSuccess] = useState<boolean | null>(null);
   const [extractionError, setExtractionError] = useState<string>("");
   const [mounted, setMounted] = useState(false);
@@ -121,9 +132,41 @@ export default function JobFormPage() {
     setJobForms((prev) => prev.map((form, i) => (i === activeTabIndex ? { ...form, [id]: value } : form)));
   };
 
+  const handleAuthenticate = async () => {
+    setAuthStatus("authenticating");
+    setAuthError("");
+    try {
+      const res = await fetch("/api/ikman-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: credentials.email, password: credentials.password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAuthSession(data.session);
+        setAuthStatus("success");
+      } else {
+        setAuthStatus("error");
+        setAuthError(data.error || "Authentication failed.");
+      }
+    } catch {
+      setAuthStatus("error");
+      setAuthError("Failed to reach the authentication server.");
+    }
+  };
+
   if (!mounted) return null;
 
   const activeForm = jobForms[activeTabIndex] || {};
+  const emailInvalid = credentials.email.trim() !== "" && !isValidEmail(credentials.email);
+
+  const credentialFieldClasses = (value: string, invalid: boolean) =>
+    `w-full px-3 py-2.5 rounded-lg border text-sm text-gray-800 focus:outline-none focus:ring-2 transition-colors ${invalid
+      ? "bg-red-50 border-red-300 focus:ring-red-300 placeholder-red-400"
+      : value.trim() === ""
+        ? "bg-green-50 border-green-300 focus:ring-green-300 placeholder-green-400"
+        : "bg-white border-gray-300 focus:ring-indigo-300 placeholder-gray-400"
+    }`;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/20">
@@ -188,7 +231,78 @@ export default function JobFormPage() {
           <span>Green fields could not be extracted — fill them in manually</span>
         </div>
 
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+          }}
+          className="space-y-6"
+        >
+          {/* Ikman.lk login — shared across every location tab, not per-ad data */}
+          <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+              <h2 className="text-base font-bold text-gray-800">Ikman.lk Login</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Used to log in and post this ad — applies to every location tab.</p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={credentials.email}
+                  onChange={(e) => {
+                    setCredentials((prev) => ({ ...prev, email: e.target.value }));
+                    setAuthStatus("idle");
+                    setAuthError("");
+                    setAuthSession(null);
+                  }}
+                  className={credentialFieldClasses(credentials.email, emailInvalid)}
+                />
+                {emailInvalid && (
+                  <p className="text-xs text-red-600 mt-1">Enter a valid email address.</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Password</label>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={credentials.password}
+                  onChange={(e) => {
+                    setCredentials((prev) => ({ ...prev, password: e.target.value }));
+                    setAuthStatus("idle");
+                    setAuthError("");
+                    setAuthSession(null);
+                  }}
+                  className={credentialFieldClasses(credentials.password, false)}
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleAuthenticate}
+                  disabled={authStatus === "authenticating" || !credentials.email || !credentials.password || emailInvalid}
+                  className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm"
+                >
+                  {authStatus === "authenticating" ? "Authenticating..." : "Authenticate"}
+                </button>
+                {authStatus === "success" && (
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
+                    <CheckCircle2 size={16} /> Authenticated
+                  </span>
+                )}
+              </div>
+
+              {authStatus === "error" && (
+                <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                  <AlertTriangle size={18} className="text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-700">{authError}</p>
+                </div>
+              )}
+            </div>
+          </section>
+
           {/* Location tabs — only shown when the poster advertises this role across multiple locations */}
           {jobForms.length > 1 && (
             <div className="flex flex-wrap gap-2">
@@ -221,7 +335,9 @@ export default function JobFormPage() {
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-md shadow-indigo-200 text-sm"
+              disabled={authStatus !== "success"}
+              title={authStatus !== "success" ? "Authenticate with ikman.lk first" : undefined}
+              className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors shadow-md shadow-indigo-200 text-sm"
             >
               Post Job
             </button>
