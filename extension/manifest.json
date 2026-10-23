@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "ikman Job Poster",
+  "version": "1.0.0",
+  "description": "Fills ikman.lk's post-ad form with a job reviewed in Job Poster Analyzer. You check the ad and click Post ad yourself.",
+  "background": { "service_worker": "background.js" },
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://job-poster-analyzer.vercel.app/*", "http://localhost/*"],
+      "js": ["app-bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://ikman.lk/*"],
+      "js": ["ikman-fill.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

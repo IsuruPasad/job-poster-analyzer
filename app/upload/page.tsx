@@ -9,6 +9,7 @@ import Loader from "../components/Loader";
 import LogoutButton from "../components/LogoutButton";
 import SiteHeader from "../components/SiteHeader";
 import { ApiResponse, ExtractErrorCode } from "@/types/job";
+import { handleUnauthorized } from "@/lib/auth/api";
 import { resizeImageForUpload } from "@/lib/image";
 import { EXTRACT_ERROR_MESSAGES } from "@/lib/errorMessages";
 import { MAX_UPLOAD_BYTES, formatBytes } from "@/lib/uploadLimits";
@@ -102,6 +103,12 @@ export default function UploadPage() {
       });
     } finally {
       clearTimeout(timer);
+    }
+
+    // Not logged in, or the session expired: log in again and come back here, like authFetch does.
+    if (res.status === 401) {
+      console.warn("[extract] HTTP 401 from /api/extract — the session is missing or expired, redirecting to login");
+      return handleUnauthorized();
     }
 
     let json: ApiResponse;

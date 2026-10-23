@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { AIError, getAIProvider, type AIErrorKind, type AIProvider, type ImageMediaType } from "@/lib/ai";
 import { EXTRACTION_SCHEMA, buildExtractionSystemPrompt, extractionPrompt, toJobDetails } from "@/lib/jobExtraction";
 import { getLocationData } from "@/lib/locations/server";
+import { clearAuthCookies, isRejectedSession, verifySessionToken } from "@/lib/auth/server";
+import { SESSION_COOKIE } from "@/lib/auth/session";
 import { EXTRACT_ERROR_MESSAGES } from "@/lib/errorMessages";
 import { MAX_UPLOAD_BYTES, formatBytes, validateImageFile } from "@/lib/uploadLimits";
 import type { ApiResponse, ExtractErrorCode } from "@/types/job";
+
+// Seconds the host (e.g. Vercel) lets this route run: Gemini gets up to 3 attempts × 60 s, and
+// the upload page gives up after 180 s anyway.
+export const maxDuration = 180;
 
 const AI_ERROR_STATUS: Record<AIErrorKind, number> = {
   config: 500,
@@ -34,6 +40,24 @@ interface RequestContext {
 
 export async function POST(req: NextRequest) {
   const ctx: RequestContext = { startedAt: Date.now() };
+
+  // Every extraction spends the AI key's quota, so only logged-in users get one — checked
+  // with the gateway, since a cookie is easy to fake.
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) {
+    return fail(ctx, "NOT_LOGGED_IN", 401, "No sessionToken cookie on the request.");
+  }
+  try {
+    const check = await verifySessionToken(token);
+    if (!check.valid && isRejectedSession(check.status)) {
+      const res = fail(ctx, "SESSION_EXPIRED", 401, `GET /v1/account returned ${check.status} for the app session token.`);
+      clearAuthCookies(res); // same as any other 401: the session is dead
+      return res;
+    }
+    if (!check.valid) console.warn(`[extract] ⚠ couldn't verify the session (GET /v1/account → HTTP ${check.status}) — extracting anyway`);
+  } catch (err) {
+    console.warn("[extract] ⚠ couldn't verify the session — extracting anyway:", err);
+  }
 
   let file: File | null;
   try {

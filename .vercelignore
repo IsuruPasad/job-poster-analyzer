@@ -1,0 +1,9 @@
+# Never upload local secrets or build output: Vercel installs and builds from scratch, and its
+# env vars come from the project settings, not .env.local.
+.env*
+.next
+node_modules
+.git
+.claude
+*.tsbuildinfo
+next-env.d.ts

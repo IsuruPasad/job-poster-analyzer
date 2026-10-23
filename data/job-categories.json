@@ -16,14 +16,14 @@
     ]
   },
   {
-    "category": "Analysts",
+    "category": "Analyst",
     "roles": [
-      "Business Analysts",
-      "Data Analysts",
       "Digital Marketing Analysts",
-      "Market Research Analysts",
-      "Quality Checkers/Analysts",
+      "Quality Checkers / Analysts",
       "Trainee Analysts",
+      "Business Analyst",
+      "Data Analyst",
+      "Market Research Analyst",
       "Other Analysts"
     ]
   },
@@ -33,7 +33,7 @@
       "Apparel and Garment Machine Operator",
       "Apparel and Garment Quality Checker",
       "Cutting Officer",
-      "Garment worker",
+      "Garment Worker",
       "Pattern Maker",
       "Production Operator",
       "Tailor",
@@ -51,7 +51,7 @@
     ]
   },
   {
-    "category": "Banking and Financial Services",
+    "category": "Banking and Financial services",
     "roles": [
       "Banking & Finance Assistant",
       "Banking & Finance Branch Manager / Assistant Manager",
@@ -94,6 +94,7 @@
       "Technical Officer",
       "Tilers",
       "Welder",
+      "Draftsman",
       "Other Building Construction Worker"
     ]
   },
@@ -139,7 +140,7 @@
       "Commi",
       "Executive Chef",
       "Head Chef",
-      "Hot/Cold Kitchen Chef",
+      "Hot / Cold Kitchen Chef",
       "Pastry Chef",
       "Salad Bar Helper",
       "Sous Chef",
@@ -193,7 +194,12 @@
   },
   {
     "category": "Counsellor",
-    "roles": []
+    "roles": [
+      "Career Counsellor",
+      "Student Counsellor",
+      "Banking & Finance Counsellor",
+      "Other Counsellor"
+    ]
   },
   {
     "category": "Crew member",
@@ -235,7 +241,7 @@
     "roles": [
       "Fashion Designer",
       "Jewellery Designer",
-      "Other Designers"
+      "Other Designer"
     ]
   },
   {
@@ -271,12 +277,12 @@
       "Ambulance Driver",
       "Bus Driver",
       "Chauffeur",
-      "Commercial Vehicle Driver",
-      "Heavy Vehicle Driver",
-      "Light Vehicle Driver",
+      "Commercial vehicle Driver",
+      "Heavy vehicle Driver",
+      "Light vehicle Driver",
       "Lorry Driver",
       "Private Driver",
-      "School Bus Driver",
+      "School bus Driver",
       "Other Driver"
     ]
   },
@@ -294,26 +300,19 @@
     "roles": [
       "Academic Coordinator",
       "Academic staff",
-      "Commerce Teacher",
       "Educational Coordinator",
       "Educational Psychologist",
-      "English Teacher",
       "Individual Tuition Teacher",
       "Language Instructor",
       "Lecturer",
-      "Maths Teacher",
-      "Music Teacher",
       "Non Academic",
       "Online Tutor",
       "Physical Education (PE) Teacher",
       "Preschool Teacher",
       "Primary School Teacher",
       "Public Speaking Coach",
-      "Science Teacher",
       "Secondary School Teacher",
-      "Sinhala Teacher",
       "Special Education Teacher",
-      "Tamil Teacher",
       "Teaching Assistant",
       "Trainee Teacher",
       "Trainer",
@@ -344,7 +343,7 @@
     "category": "Factory and Manufacturing",
     "roles": [
       "Factory Assistant",
-      "Factory Laborer",
+      "Factory laborer",
       "Factory Manager / Assistant Manager",
       "Factory Operations Helper",
       "Factory Supervisor",
@@ -445,7 +444,6 @@
       "Software Engineer",
       "Web Designer",
       "Web Developer",
-      "Other Hardware and Network Engineer",
       "Other IT Engineer"
     ]
   },
@@ -578,7 +576,7 @@
     ]
   },
   {
-    "category": "Sales And Marketing",
+    "category": "Sales and Marketing",
     "roles": [
       "Area & Regional Sales Managers / Assistant Manager",
       "Brand Executive",
@@ -632,11 +630,11 @@
   {
     "category": "Sports and Wellness",
     "roles": [
-      "Gym Couch",
       "Life Guard",
       "Nutritionist",
       "Personal Training Instructor",
       "Sports Instructor",
+      "Gym Coach",
       "Other Sports and Wellness"
     ]
   },
@@ -644,14 +642,14 @@
     "category": "Stores and Warehouse",
     "roles": [
       "Assistant Store Keeper",
-      "Inventory Controler",
-      "Store Assitant",
       "Store Keeper",
       "Store Manager / Assistant Manager",
-      "Store/Warehouse Executive",
+      "Store / Warehouse Executive",
       "Warehouse Assistant",
       "Warehouse Executive",
       "Warehouse Manager / Assistant Manager",
+      "Inventory Controller",
+      "Store Assistant",
       "Other Stores and Warehouse"
     ]
   },
@@ -675,7 +673,7 @@
     "roles": []
   },
   {
-    "category": "Travel And Ticketing",
+    "category": "Travel and Ticketing",
     "roles": [
       "Reservations Executive",
       "Reservations Manager / Assistant Manager",
@@ -688,5 +686,19 @@
       "Travel Agent",
       "Travel Consultants"
     ]
+  },
+  {
+    "category": "Agriculture",
+    "roles": [
+      "Agriculture Executive",
+      "Agriculture Trainee",
+      "Manager",
+      "Supervisor",
+      "Other Agriculture"
+    ]
+  },
+  {
+    "category": "Draftsman",
+    "roles": []
   }
 ]

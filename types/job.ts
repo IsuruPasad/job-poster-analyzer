@@ -46,6 +46,8 @@ export type ExtractErrorCode =
   | "REQUEST_TIMEOUT"
   | "BAD_SERVER_RESPONSE"
   // Returned by /api/extract
+  | "NOT_LOGGED_IN" // no app session cookie on the request
+  | "SESSION_EXPIRED" // the app session's token is no longer valid
   | "NO_IMAGE"
   | "INVALID_REQUEST"
   | "NOT_A_JOB_POSTER"
@@ -63,13 +65,16 @@ export interface ExtractErrorResponse {
 
 export type ApiResponse = ExtractResponse | ExtractErrorResponse;
 
-/** Stable code for every way "Post Job" (POST /api/post-job → Playwright automation) can fail. */
+/** Stable code for every way "Post Job" (POST /api/post-job → the browser extension or the Playwright automation) can fail. */
 export type PostJobErrorCode =
   // Detected in the browser
   | "NETWORK_ERROR"
   | "BAD_SERVER_RESPONSE"
+  | "POST_EXTENSION_MISSING" // extension method: the browser extension didn't answer (not installed / disabled)
+  | "POST_EXTENSION_FAILED" // extension method: the extension answered but couldn't open ikman.lk
   // Returned by /api/post-job
   | "POST_INVALID_REQUEST"
+  | "POST_DISABLED" // posting is switched off for this deployment (POST_JOB_METHOD=off)
   | "POST_CONFIG" // JOB_SITE_URL not configured (or, for the CLI, no login credentials)
   | "POST_NOT_LOGGED_IN" // no app session cookie on the request
   | "POST_SESSION_EXPIRED" // the app session's ikman.lk token is no longer valid
@@ -83,8 +88,36 @@ export type PostJobErrorCode =
   | "POST_TIMEOUT" // an expected element/page never appeared
   | "POST_FAILED";
 
+/**
+ * What the browser extension needs to fill ikman.lk's post-ad form for one location tab
+ * (POST_JOB_METHOD=extension). Values are already in the form's formats; "" means leave blank.
+ */
+export interface PostAdHandoff {
+  /** ikman.lk's post-ad form for this category and town, or its generic Post Ad page when either id is unknown. */
+  url: string;
+  fields: {
+    role: string;
+    title: string;
+    description: string;
+    jobType: string;
+    /** Whole years, digits only. */
+    experience: string;
+    education: string;
+    /** Digits only. */
+    salaryFrom: string;
+    salaryTo: string;
+    employer: string;
+    website: string;
+    /** Local format (07…), for "Phone (up to 3)". */
+    phone: string;
+    /** YYYY-MM-DD. ikman.lk's deadline is a read-only calendar, so the extension only shows it. */
+    deadline: string;
+  };
+}
+
 export type PostJobResponse =
-  | { success: true }
+  // `handoff` is set by the extension method; the browser method answers once its window is closed.
+  | { success: true; handoff?: PostAdHandoff }
   | {
       success: false;
       /** Generic user-facing message — technical detail is only in `details` (logged to the console). */

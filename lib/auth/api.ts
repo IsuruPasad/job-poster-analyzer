@@ -38,7 +38,7 @@ export async function login(email: string, password: string): Promise<AuthSessio
 }
 
 // Token expired or revoked: drop the session and send the user to log in, coming back here afterwards.
-function handleUnauthorized() {
+export function handleUnauthorized() {
   clearSession();
   fetch(`${API_BASE}/logout`, { method: "POST" }).catch(() => {});
   window.location.href = loginPath(window.location.pathname + window.location.search);

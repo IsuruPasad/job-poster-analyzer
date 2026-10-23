@@ -20,7 +20,7 @@ const STEPS = [
   {
     icon: Send,
     title: "Post to ikman.lk",
-    text: "Sign in with your ikman.lk account and the ad is posted for you.",
+    text: "ikman.lk's post-ad form opens already filled in. Check it and click Post ad.",
   },
 ];
 

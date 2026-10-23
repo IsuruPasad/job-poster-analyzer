@@ -63,6 +63,14 @@ export async function verifySessionToken(token: string): Promise<{ valid: true; 
   return { valid: true, account: ((await res.json()) as { account: UserAccount }).account };
 }
 
+/**
+ * Whether a failed verifySessionToken status means the token itself is dead (401: expired or
+ * revoked, 400: malformed — e.g. a made-up cookie) rather than the check failing.
+ */
+export function isRejectedSession(status: number): boolean {
+  return status === 400 || status === 401;
+}
+
 export function clearAuthCookies(res: NextResponse) {
   res.cookies.set(SESSION_COOKIE, "", { path: "/", maxAge: 0 });
   res.cookies.set(USER_COOKIE, "", { path: "/", maxAge: 0 });

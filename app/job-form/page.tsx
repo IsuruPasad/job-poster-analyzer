@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { JobDetails, PostJobErrorCode, PostJobResponse } from "@/types/job";
 import { POST_JOB_ERROR_MESSAGES } from "@/lib/errorMessages";
+import { handOffToExtension, pingExtension } from "@/lib/extension";
+import { POST_JOB_METHOD } from "@/lib/features";
 import { clearSession, loginPath } from "@/lib/auth/session";
 import { AppWindow, ArrowLeft, AlertTriangle, Check, CheckCircle2, House } from "lucide-react";
 import ErrorAlert from "../components/ErrorAlert";
@@ -70,11 +72,14 @@ export default function JobFormPage() {
   const [extractionError, setExtractionError] = useState<string>("");
   const [extractionErrorCode, setExtractionErrorCode] = useState<string>("");
   const [mounted, setMounted] = useState(false);
-  // The tab whose "Post Job" run is in progress (the automation, then the user finishing the
-  // ad in its window), and the tabs whose run finished — the window was closed.
+  // The tab whose "Post Job" run is in progress, and the tabs whose run finished: with the
+  // extension method ikman.lk's form was opened in a new tab, with the browser method the
+  // automation's window was closed.
   const [postingTab, setPostingTab] = useState<number | null>(null);
   const [doneTabs, setDoneTabs] = useState<Set<number>>(new Set());
   const posting = postingTab !== null;
+  // The tab the extension most recently opened on ikman.lk.
+  const [handedOffTab, setHandedOffTab] = useState<number | null>(null);
   // Generic message + code only — the technical detail is logged to the console.
   const [postError, setPostError] = useState<{ code: PostJobErrorCode; message: string } | null>(null);
 
@@ -180,13 +185,17 @@ export default function JobFormPage() {
     setPostingTab(postedTab);
     setPostError(null);
     try {
+      if (POST_JOB_METHOD === "extension" && !(await pingExtension())) {
+        return failWith("POST_EXTENSION_MISSING", { technical: "The ikman Job Poster extension didn't answer a ping within 1 s" });
+      }
+
       let res: Response;
       try {
         res = await fetch("/api/post-job", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           // No credentials sent: the route reuses the app session cookie as the ikman.lk login.
-          // It answers once the automation's browser window has been closed.
+          // Browser method: it answers once the automation's browser window has been closed.
           body: JSON.stringify({ job: jobForms[postedTab] || {} }),
         });
       } catch (err) {
@@ -212,7 +221,19 @@ export default function JobFormPage() {
         return failWith(data.code, { httpStatus: res.status, ...data.details }, data.error);
       }
 
-      // The ikman.lk window was closed: with several locations, move on to the next one not done yet.
+      if (data.handoff) {
+        const result = await handOffToExtension(data.handoff);
+        if (!result?.ok) {
+          return failWith("POST_EXTENSION_FAILED", {
+            technical: result ? `The extension couldn't open ikman.lk: ${result.error}` : "The extension didn't answer within 10 s",
+            url: data.handoff.url,
+          });
+        }
+        setHandedOffTab(postedTab);
+      }
+
+      // ikman.lk's form was opened (extension) or the automation's window was closed (browser):
+      // with several locations, move on to the next one not done yet.
       const done = new Set(doneTabs).add(postedTab);
       setDoneTabs(done);
       const next = nextOpenTab(postedTab, done, jobForms.length);
@@ -253,6 +274,18 @@ export default function JobFormPage() {
         </button>
 
         <h1 className="text-2xl font-bold mb-6">Review Job Details</h1>
+
+        {handedOffTab !== null && (
+          <div role="status" className="flex items-start gap-3 bg-white border-l-4 border-ikman-green rounded-lg shadow-sm px-4 py-3 mb-6">
+            <AppWindow size={18} className="text-ikman-green flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold">
+                Opened{jobForms.length > 1 ? ` ${tabLabel(jobForms[handedOffTab] || {}, handedOffTab)}` : ""} on ikman.lk in a new tab
+              </p>
+              <p className="text-xs text-ikman-muted mt-0.5">Check the ad there, pick the application deadline if there is one, and click Post ad.</p>
+            </div>
+          </div>
+        )}
 
         {/* Extraction status banner */}
         {extractionSuccess === true && (
@@ -325,7 +358,7 @@ export default function JobFormPage() {
 
           <JobLocationForm data={activeForm} onChange={updateActiveForm} />
 
-          {postingTab !== null && (
+          {postingTab !== null && POST_JOB_METHOD === "browser" && (
             <div role="status" className="flex items-start gap-3 bg-white border-l-4 border-ikman-green rounded-lg shadow-sm px-4 py-3">
               <AppWindow size={18} className="text-ikman-green flex-shrink-0 mt-0.5" />
               <div>
@@ -347,7 +380,26 @@ export default function JobFormPage() {
                   Log in again
                 </button>
               )}
+              {postError.code === "POST_EXTENSION_MISSING" && (
+                // A new tab, so the edits on this form aren't lost.
+                <a href="/extension" target="_blank" className="mt-2 inline-block text-sm font-bold text-ikman-red underline">
+                  How to install the extension
+                </a>
+              )}
             </ErrorAlert>
+          )}
+
+          {POST_JOB_METHOD === "extension" && (
+            <p className="text-xs text-ikman-muted">
+              Post Job opens ikman.lk&apos;s post-ad form in a new tab, filled in by the{" "}
+              <a href="/extension" target="_blank" className="text-ikman-green hover:underline">
+                ikman Job Poster extension
+              </a>
+              . You check the ad there and post it.
+            </p>
+          )}
+          {POST_JOB_METHOD === "off" && (
+            <p className="text-xs text-ikman-muted">{POST_JOB_ERROR_MESSAGES.POST_DISABLED}</p>
           )}
 
           {/* Actions */}
@@ -361,7 +413,7 @@ export default function JobFormPage() {
             </button>
             <button
               type="submit"
-              disabled={posting}
+              disabled={posting || POST_JOB_METHOD === "off"}
               className="flex-1 px-6 py-3 bg-ikman-yellow hover:bg-ikman-yellow-dark active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-ikman-brown font-bold uppercase rounded transition-all duration-150 text-sm"
             >
               {posting ? "Posting..." : "Post Job"}

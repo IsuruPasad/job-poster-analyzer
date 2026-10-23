@@ -9,8 +9,11 @@ export const ACCEPTED_IMAGE_LABEL = "JPEG, PNG, or WebP";
 
 /** Largest file the picker accepts — it's downscaled in the browser before upload. */
 export const MAX_SELECTED_BYTES = 10 * 1024 * 1024;
-/** Largest image the server sends to the AI (the strictest provider limit, Claude's 5 MB). */
-export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+/**
+ * Largest image uploaded to the server: under Vercel's 4.5 MB request-body limit (leaving room
+ * for the multipart overhead), which also keeps it under the strictest AI limit, Claude's 5 MB.
+ */
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 export function isAcceptedImageType(type: string): type is ImageMediaType {
   return (ACCEPTED_IMAGE_TYPES as readonly string[]).includes(type);

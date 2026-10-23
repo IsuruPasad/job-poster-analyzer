@@ -5,7 +5,7 @@ export const EDUCATION_LEVELS: string[] = [
   "Diploma",
   "Higher Diploma",
   "Degree",
-  "Master",
+  "Masters",
   "Doctorate",
   "Skilled Apprentice",
 ];

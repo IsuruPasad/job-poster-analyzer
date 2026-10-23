@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { postJob, type PostJobRun } from "@/automation/postJob";
-import { classifyPostJobError } from "@/automation/errors";
-import { clearAuthCookies, verifySessionToken } from "@/lib/auth/server";
+import type { PostJobRun } from "@/automation/postJob";
+import { clearAuthCookies, isRejectedSession, verifySessionToken } from "@/lib/auth/server";
 import { SESSION_COOKIE, USER_COOKIE } from "@/lib/auth/session";
 import { POST_JOB_ERROR_MESSAGES } from "@/lib/errorMessages";
+import { POST_JOB_METHOD } from "@/lib/features";
 import { findSriLankanPhone } from "@/lib/phone";
+import { buildPostAdHandoff } from "@/lib/postAdHandoff";
 import type { UserAccount } from "@/types/auth";
 import type { PostJobErrorCode, PostJobResponse } from "@/types/job";
 
 const ERROR_STATUS: Partial<Record<PostJobErrorCode, number>> = {
   POST_INVALID_REQUEST: 400,
+  POST_DISABLED: 501,
   POST_LOCATION_REQUIRED: 400,
   POST_PHONE_REQUIRED: 400,
   POST_NOT_LOGGED_IN: 401,
@@ -21,6 +23,9 @@ const ERROR_STATUS: Partial<Record<PostJobErrorCode, number>> = {
 
 export async function POST(req: NextRequest) {
   const startedAt = Date.now();
+  if (POST_JOB_METHOD === "off") {
+    return fail("POST_DISABLED", "POST_JOB_METHOD is off for this deployment.", startedAt);
+  }
 
   let body: { job?: unknown };
   try {
@@ -47,8 +52,8 @@ export async function POST(req: NextRequest) {
       account = check.account;
       accountId ??= check.account.id;
       console.info(`[post-job] posting as "${check.account.profile.name}" (ikman.lk account ${check.account.id})`);
-    } else if (check.status === 401) {
-      const res = fail("POST_SESSION_EXPIRED", "GET /v1/account returned 401 for the app session token.", startedAt, job);
+    } else if (isRejectedSession(check.status)) {
+      const res = fail("POST_SESSION_EXPIRED", `GET /v1/account returned ${check.status} for the app session token.`, startedAt, job);
       clearAuthCookies(res); // same as any other 401: the session is dead
       return res;
     } else {
@@ -58,6 +63,15 @@ export async function POST(req: NextRequest) {
     console.warn("[post-job] ⚠ couldn't verify the session — posting anyway:", err);
   }
 
+  // Extension method: the user's own browser fills ikman.lk's form, so the reply is just what it needs.
+  if (POST_JOB_METHOD === "extension") {
+    const handoff = await buildPostAdHandoff(withApplicationPhone(job, account));
+    console.info(`[post-job] handing off to the browser extension: ${handoff.url} (${Date.now() - startedAt} ms)`);
+    return NextResponse.json<PostJobResponse>({ success: true, handoff });
+  }
+
+  // Imported only for the browser method: on Vercel, Playwright can't even be loaded.
+  const [{ postJob }, { classifyPostJobError }] = await Promise.all([import("@/automation/postJob"), import("@/automation/errors")]);
   let run: PostJobRun;
   try {
     run = await postJob(withApplicationPhone(job, account), { session: { token, accountId } });
