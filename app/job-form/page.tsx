@@ -1,17 +1,47 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { JobDetails } from "@/types/job";
-import { IkmanCredentials, IkmanSession } from "@/types/auth";
-import { ScanSearch, Sparkles, ArrowLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { JobDetails, PostJobErrorCode, PostJobResponse } from "@/types/job";
+import { POST_JOB_ERROR_MESSAGES } from "@/lib/errorMessages";
+import { clearSession, loginPath } from "@/lib/auth/session";
+import { AppWindow, ArrowLeft, AlertTriangle, Check, CheckCircle2, House } from "lucide-react";
+import ErrorAlert from "../components/ErrorAlert";
+import LogoutButton from "../components/LogoutButton";
+import SiteHeader from "../components/SiteHeader";
 import { matchCategory, matchRole, findCategoryByRole } from "@/lib/jobCategories";
-import { matchDistrict, matchTown, findDistrictByTown } from "@/lib/locations";
+import { resolveLocation } from "@/lib/locations";
+import { loadLocations } from "@/lib/locations/client";
 import { matchJobType } from "@/lib/jobTypes";
 import { matchEducation } from "@/lib/education";
 import { isIsoDate } from "@/lib/date";
-import { isValidEmail } from "@/lib/email";
 import JobLocationForm from "./JobLocationForm";
+
+// Post Job failures that a fresh app login fixes (it supplies the ikman.lk session the automation reuses).
+const RELOGIN_CODES: PostJobErrorCode[] = ["POST_NOT_LOGGED_IN", "POST_SESSION_EXPIRED", "POST_AUTH_FAILED"];
+
+// Drop the current session first — otherwise the home page sees the old cookie and skips the
+// login popup — then come back here after logging in.
+async function logInAgain() {
+  clearSession();
+  await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+  window.location.href = loginPath("/job-form");
+}
+
+/** A location tab's label: its town, else its district. */
+function tabLabel(form: Record<string, string>, idx: number): string {
+  return form.town || form.district || `Location ${idx + 1}`;
+}
+
+/** The next tab after `from` (wrapping around) that hasn't been posted yet, or null if none is left. */
+function nextOpenTab(from: number, done: Set<number>, count: number): number | null {
+  for (let step = 1; step < count; step++) {
+    const idx = (from + step) % count;
+    if (!done.has(idx)) return idx;
+  }
+  return null;
+}
 
 const EMPTY_JOB: JobDetails = {
   posterTitle: "",
@@ -36,17 +66,17 @@ export default function JobFormPage() {
   // is just an array of length 1, rendered without a tab bar.
   const [jobForms, setJobForms] = useState<Record<string, string>[]>([]);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
-  // Ikman.lk login — one shared value for the whole page, not per-location like jobForms.
-  // Kept in memory only (never sessionStorage) since it's a plaintext password.
-  const [credentials, setCredentials] = useState<IkmanCredentials>({ email: "", password: "" });
-  // Result of POSTing those credentials to /api/ikman-auth. "Post Job" stays disabled until this is "success".
-  const [authStatus, setAuthStatus] = useState<"idle" | "authenticating" | "success" | "error">("idle");
-  const [authError, setAuthError] = useState<string>("");
-  // Bearer token from ikman.lk's real login endpoint, sent along with the post-listing request.
-  const [authSession, setAuthSession] = useState<IkmanSession | null>(null);
   const [extractionSuccess, setExtractionSuccess] = useState<boolean | null>(null);
   const [extractionError, setExtractionError] = useState<string>("");
+  const [extractionErrorCode, setExtractionErrorCode] = useState<string>("");
   const [mounted, setMounted] = useState(false);
+  // The tab whose "Post Job" run is in progress (the automation, then the user finishing the
+  // ad in its window), and the tabs whose run finished — the window was closed.
+  const [postingTab, setPostingTab] = useState<number | null>(null);
+  const [doneTabs, setDoneTabs] = useState<Set<number>>(new Set());
+  const posting = postingTab !== null;
+  // Generic message + code only — the technical detail is logged to the console.
+  const [postError, setPostError] = useState<{ code: PostJobErrorCode; message: string } | null>(null);
 
   useEffect(() => {
     const success = sessionStorage.getItem("extractionSuccess");
@@ -55,6 +85,7 @@ export default function JobFormPage() {
 
     setExtractionSuccess(success === "true");
     setExtractionError(error);
+    setExtractionErrorCode(sessionStorage.getItem("extractionErrorCode") || "");
 
     let job: JobDetails = EMPTY_JOB;
     if (raw) {
@@ -98,24 +129,17 @@ export default function JobFormPage() {
     // (e.g. a pre-date-picker cached value) is dropped rather than shown broken/blank-but-wrong.
     base.applicationDeadline = isIsoDate(base.applicationDeadline) ? base.applicationDeadline : "";
 
-    // Gemini's own generated title — kept only as a fallback for when jobRole couldn't be
+    // The AI's own generated title — kept only as a fallback for when jobRole couldn't be
     // matched to the taxonomy, since "{jobRole} - {location}" needs a real jobRole to build.
     const fallbackTitle = base.posterTitle;
 
     const detectedLocations = job.locations && job.locations.length > 0 ? job.locations : [{ district: null, town: null }];
     setJobForms(
       detectedLocations.map((loc) => {
-        // Same taxonomy normalization as jobCategory/jobRole above — guards against stale
-        // cached values (or a district/town rename) producing an unknown dropdown selection.
-        let district = matchDistrict(loc.district) || "";
-        let town = matchTown(district, loc.town) || "";
-        if (!town && loc.town) {
-          const inferredDistrict = findDistrictByTown(loc.town);
-          if (inferredDistrict) {
-            district = inferredDistrict;
-            town = matchTown(inferredDistrict, loc.town) || "";
-          }
-        }
+        // Extraction already mapped these onto ikman.lk's names; re-checked below once the
+        // location tree has loaded.
+        const district = loc.district ?? "";
+        const town = loc.town ?? "";
 
         // Title format: "{jobRole} - {location}", or just "{jobRole}" without a location.
         const location = town || district;
@@ -126,183 +150,156 @@ export default function JobFormPage() {
     );
     setActiveTabIndex(0);
     setMounted(true);
+
+    // Re-check every tab's district/town against ikman.lk's current location tree, so a stale
+    // cached value can't leave a selection the dropdowns (or ikman.lk's posting UI) don't have.
+    // On failure JobLocationForm shows the load error itself.
+    loadLocations()
+      .then((locationData) =>
+        setJobForms((forms) =>
+          forms.map((form) => {
+            const resolved = resolveLocation(locationData, { district: form.district, town: form.town });
+            return { ...form, district: resolved.district ?? "", town: resolved.town ?? "" };
+          })
+        )
+      )
+      .catch(() => {});
   }, []);
 
   const updateActiveForm = (id: string, value: string) => {
     setJobForms((prev) => prev.map((form, i) => (i === activeTabIndex ? { ...form, [id]: value } : form)));
   };
 
-  const handleAuthenticate = async () => {
-    setAuthStatus("authenticating");
-    setAuthError("");
+  const handlePostJob = async () => {
+    const failWith = (code: PostJobErrorCode, details: { technical?: unknown } & Record<string, unknown>, message = POST_JOB_ERROR_MESSAGES[code]) => {
+      console.error(`[post-job] ✖ ${code}: ${details.technical ?? message}`, details);
+      setPostError({ code, message });
+    };
+
+    const postedTab = activeTabIndex;
+    setPostingTab(postedTab);
+    setPostError(null);
     try {
-      const res = await fetch("/api/ikman-auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: credentials.email, password: credentials.password }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAuthSession(data.session);
-        setAuthStatus("success");
-      } else {
-        setAuthStatus("error");
-        setAuthError(data.error || "Authentication failed.");
+      let res: Response;
+      try {
+        res = await fetch("/api/post-job", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // No credentials sent: the route reuses the app session cookie as the ikman.lk login.
+          // It answers once the automation's browser window has been closed.
+          body: JSON.stringify({ job: jobForms[postedTab] || {} }),
+        });
+      } catch (err) {
+        return failWith("NETWORK_ERROR", {
+          technical: `fetch(/api/post-job) failed: ${err instanceof Error ? err.message : err}`,
+          online: navigator.onLine,
+          error: err,
+        });
       }
-    } catch {
-      setAuthStatus("error");
-      setAuthError("Failed to reach the authentication server.");
+
+      let data: PostJobResponse;
+      try {
+        data = await res.json();
+      } catch (err) {
+        return failWith("BAD_SERVER_RESPONSE", {
+          technical: `/api/post-job returned a non-JSON response (HTTP ${res.status} ${res.statusText})`,
+          contentType: res.headers.get("content-type"),
+          error: err,
+        });
+      }
+
+      if (!data.success) {
+        return failWith(data.code, { httpStatus: res.status, ...data.details }, data.error);
+      }
+
+      // The ikman.lk window was closed: with several locations, move on to the next one not done yet.
+      const done = new Set(doneTabs).add(postedTab);
+      setDoneTabs(done);
+      const next = nextOpenTab(postedTab, done, jobForms.length);
+      if (next !== null) {
+        setActiveTabIndex(next);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } finally {
+      setPostingTab(null);
     }
   };
 
   if (!mounted) return null;
 
   const activeForm = jobForms[activeTabIndex] || {};
-  const emailInvalid = credentials.email.trim() !== "" && !isValidEmail(credentials.email);
-
-  const credentialFieldClasses = (value: string, invalid: boolean) =>
-    `w-full px-3 py-2.5 rounded-lg border text-sm text-gray-800 focus:outline-none focus:ring-2 transition-colors ${invalid
-      ? "bg-red-50 border-red-300 focus:ring-red-300 placeholder-red-400"
-      : value.trim() === ""
-        ? "bg-green-50 border-green-300 focus:ring-green-300 placeholder-green-400"
-        : "bg-white border-gray-300 focus:ring-indigo-300 placeholder-gray-400"
-    }`;
+  const upNext = postingTab !== null ? nextOpenTab(postingTab, new Set(doneTabs).add(postingTab), jobForms.length) : null;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/20">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
-          <div className="p-2 bg-indigo-600 rounded-xl">
-            <ScanSearch size={20} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-gray-900 leading-none">Job Poster Analyzer</h1>
-            <p className="text-xs text-gray-400 mt-0.5">AI-powered extraction · English, Sinhala & Tamil</p>
-          </div>
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-indigo-600 font-medium bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full">
-            <Sparkles size={12} />
-            Powered by Gemini
-          </div>
-        </div>
-      </header>
+    <main className="flex-1 flex flex-col bg-ikman-bg text-ikman-ink">
+      <SiteHeader>
+        <nav className="flex items-center gap-4 sm:gap-6">
+          <Link href="/" aria-label="Home" className="inline-flex items-center gap-1.5 text-sm text-white hover:underline">
+            <House size={18} />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+          <LogoutButton />
+        </nav>
+      </SiteHeader>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-3xl w-full mx-auto px-4 sm:px-6 py-8">
         {/* Back button */}
         <button
-          onClick={() => router.push("/")}
-          className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium mb-6 transition-colors group"
+          onClick={() => router.push("/upload")}
+          className="flex items-center gap-2 text-sm text-ikman-green hover:underline font-bold mb-4 group"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
           Analyze another poster
         </button>
 
+        <h1 className="text-2xl font-bold mb-6">Review Job Details</h1>
+
         {/* Extraction status banner */}
         {extractionSuccess === true && (
-          <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 mb-6">
-            <CheckCircle2 size={18} className="text-indigo-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 bg-white border-l-4 border-ikman-green rounded-lg shadow-sm px-4 py-3 mb-6">
+            <CheckCircle2 size={18} className="text-ikman-green flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-indigo-800">Details extracted successfully</p>
-              <p className="text-xs text-indigo-600 mt-0.5">
-                Fields with a <span className="font-semibold text-green-700">green background</span> could not be determined from the image — please fill them in manually.
+              <p className="text-sm font-bold">Details extracted successfully</p>
+              <p className="text-xs text-ikman-muted mt-0.5">
+                Fields with a <span className="font-bold text-ikman-green">green background</span> could not be determined from the image — please fill them in manually.
               </p>
             </div>
           </div>
         )}
 
         {extractionSuccess === false && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
-            <AlertTriangle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 bg-white border-l-4 border-ikman-yellow rounded-lg shadow-sm px-4 py-3 mb-6">
+            <AlertTriangle size={18} className="text-ikman-brown flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-amber-800">Could not extract details from image</p>
+              <p className="text-sm font-bold text-ikman-brown">Could not extract details from image</p>
               {extractionError && (
-                <p className="text-xs text-amber-700 mt-0.5">{extractionError}</p>
+                <p className="text-xs mt-0.5">{extractionError}</p>
               )}
-              <p className="text-xs text-amber-700 mt-1">
-                All fields are highlighted in <span className="font-semibold text-green-700">green</span> — please fill in the job details manually.
+              {extractionErrorCode && (
+                <p className="text-[11px] font-mono text-ikman-muted mt-1">
+                  Error code: {extractionErrorCode} — full details are in the browser console
+                </p>
+              )}
+              <p className="text-xs text-ikman-muted mt-1">
+                All fields are highlighted in <span className="font-bold text-ikman-green">green</span> — please fill in the job details manually.
               </p>
             </div>
           </div>
         )}
 
         {/* Legend */}
-        <div className="flex items-center gap-2 mb-6 text-xs text-gray-500">
-          <span className="inline-block w-4 h-4 rounded bg-green-100 border border-green-300" />
+        <div className="flex items-center gap-2 mb-6 text-xs text-ikman-muted">
+          <span className="inline-block w-4 h-4 rounded bg-ikman-green/10 border border-ikman-green/50" />
           <span>Green fields could not be extracted — fill them in manually</span>
         </div>
 
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            handlePostJob();
           }}
           className="space-y-6"
         >
-          {/* Ikman.lk login — shared across every location tab, not per-ad data */}
-          <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-              <h2 className="text-base font-bold text-gray-800">Ikman.lk Login</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Used to log in and post this ad — applies to every location tab.</p>
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">Email</label>
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={credentials.email}
-                  onChange={(e) => {
-                    setCredentials((prev) => ({ ...prev, email: e.target.value }));
-                    setAuthStatus("idle");
-                    setAuthError("");
-                    setAuthSession(null);
-                  }}
-                  className={credentialFieldClasses(credentials.email, emailInvalid)}
-                />
-                {emailInvalid && (
-                  <p className="text-xs text-red-600 mt-1">Enter a valid email address.</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">Password</label>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={credentials.password}
-                  onChange={(e) => {
-                    setCredentials((prev) => ({ ...prev, password: e.target.value }));
-                    setAuthStatus("idle");
-                    setAuthError("");
-                    setAuthSession(null);
-                  }}
-                  className={credentialFieldClasses(credentials.password, false)}
-                />
-              </div>
-
-              <div className="flex items-center gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={handleAuthenticate}
-                  disabled={authStatus === "authenticating" || !credentials.email || !credentials.password || emailInvalid}
-                  className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm"
-                >
-                  {authStatus === "authenticating" ? "Authenticating..." : "Authenticate"}
-                </button>
-                {authStatus === "success" && (
-                  <span className="flex items-center gap-1.5 text-sm font-medium text-green-700">
-                    <CheckCircle2 size={16} /> Authenticated
-                  </span>
-                )}
-              </div>
-
-              {authStatus === "error" && (
-                <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                  <AlertTriangle size={18} className="text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{authError}</p>
-                </div>
-              )}
-            </div>
-          </section>
-
           {/* Location tabs — only shown when the poster advertises this role across multiple locations */}
           {jobForms.length > 1 && (
             <div className="flex flex-wrap gap-2">
@@ -311,12 +308,16 @@ export default function JobFormPage() {
                   key={idx}
                   type="button"
                   onClick={() => setActiveTabIndex(idx)}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${idx === activeTabIndex
-                    ? "bg-indigo-600 border-indigo-600 text-white"
-                    : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
+                  className={`px-4 py-2 rounded-full text-sm font-bold border transition-colors ${idx === activeTabIndex
+                    ? "bg-ikman-green border-ikman-green text-white"
+                    : "bg-white border-gray-300 text-ikman-ink hover:border-ikman-green hover:text-ikman-green"
                     }`}
                 >
-                  {form.town || form.district || `Location ${idx + 1}`}
+                  <span className="inline-flex items-center gap-1.5">
+                    {doneTabs.has(idx) && <Check size={14} aria-hidden />}
+                    {tabLabel(form, idx)}
+                    {doneTabs.has(idx) && <span className="sr-only">(done)</span>}
+                  </span>
                 </button>
               ))}
             </div>
@@ -324,22 +325,46 @@ export default function JobFormPage() {
 
           <JobLocationForm data={activeForm} onChange={updateActiveForm} />
 
+          {postingTab !== null && (
+            <div role="status" className="flex items-start gap-3 bg-white border-l-4 border-ikman-green rounded-lg shadow-sm px-4 py-3">
+              <AppWindow size={18} className="text-ikman-green flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold">
+                  Posting{jobForms.length > 1 ? ` ${tabLabel(jobForms[postingTab] || {}, postingTab)}` : ""} in a separate ikman.lk window
+                </p>
+                <p className="text-xs text-ikman-muted mt-0.5">
+                  Check the ad there and post it, then close that window
+                  {upNext !== null ? ` — this page will move on to ${tabLabel(jobForms[upNext] || {}, upNext)}.` : "."}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {postError && (
+            <ErrorAlert title="Couldn't post the job" message={postError.message} code={postError.code}>
+              {RELOGIN_CODES.includes(postError.code) && (
+                <button type="button" onClick={logInAgain} className="mt-2 text-sm font-bold text-ikman-red underline">
+                  Log in again
+                </button>
+              )}
+            </ErrorAlert>
+          )}
+
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 pb-10">
             <button
               type="button"
-              onClick={() => router.push("/")}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors text-sm"
+              onClick={() => router.push("/upload")}
+              className="flex-1 px-6 py-3 bg-white border border-gray-300 text-ikman-ink font-bold rounded hover:bg-ikman-bg transition-colors text-sm"
             >
               ← Back
             </button>
             <button
               type="submit"
-              disabled={authStatus !== "success"}
-              title={authStatus !== "success" ? "Authenticate with ikman.lk first" : undefined}
-              className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors shadow-md shadow-indigo-200 text-sm"
+              disabled={posting}
+              className="flex-1 px-6 py-3 bg-ikman-yellow hover:bg-ikman-yellow-dark active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-ikman-brown font-bold uppercase rounded transition-all duration-150 text-sm"
             >
-              Post Job
+              {posting ? "Posting..." : "Post Job"}
             </button>
           </div>
         </form>

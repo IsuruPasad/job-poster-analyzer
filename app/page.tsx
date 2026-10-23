@@ -1,138 +1,98 @@
-"use client";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { Briefcase, ClipboardCheck, Languages, Send, Upload } from "lucide-react";
+import { DEFAULT_AFTER_LOGIN, REDIRECT_PARAM, SESSION_COOKIE, safeRedirect } from "@/lib/auth/session";
+import AccountMenu from "./components/AccountMenu";
+import LoginButton from "./components/LoginButton";
+import SiteHeader from "./components/SiteHeader";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import ImageUploader from "./components/ImageUploader";
-import Loader from "./components/Loader";
-import { ApiResponse } from "@/types/job";
-import { resizeImageForUpload } from "@/lib/image";
-import { ScanSearch, Sparkles } from "lucide-react";
+const STEPS = [
+  {
+    icon: Upload,
+    title: "Upload the poster",
+    text: "Snap or upload a photo of any printed job poster.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Review the details",
+    text: "AI fills in the job form for you. Check it and complete anything it couldn't read.",
+  },
+  {
+    icon: Send,
+    title: "Post to ikman.lk",
+    text: "Sign in with your ikman.lk account and the ad is posted for you.",
+  },
+];
 
-type AppState = "idle" | "loading";
+// Public landing page, and also where logging in happens (via the login popup).
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const loggedIn = !!(await cookies()).get(SESSION_COOKIE)?.value;
+  const param = (await searchParams)[REDIRECT_PARAM];
+  const redirectUrl = typeof param === "string" ? param : null;
 
-export default function Home() {
-  const router = useRouter();
-  const [appState, setAppState] = useState<AppState>("idle");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  const handleImageSelect = useCallback((file: File) => {
-    setSelectedFile(file);
-  }, []);
-
-  const handleExtract = async () => {
-    if (!selectedFile) return;
-
-    setAppState("loading");
-
-    try {
-      const fileToUpload = await resizeImageForUpload(selectedFile);
-      const formData = new FormData();
-      formData.append("image", fileToUpload);
-
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        body: formData,
-      });
-
-      const json: ApiResponse = await res.json();
-
-      if (json.success) {
-        sessionStorage.setItem("jobData", JSON.stringify(json.data));
-        sessionStorage.setItem("extractionSuccess", "true");
-        sessionStorage.removeItem("extractionError");
-      } else {
-        sessionStorage.removeItem("jobData");
-        sessionStorage.setItem("extractionSuccess", "false");
-        sessionStorage.setItem("extractionError", json.error);
-      }
-    } catch {
-      sessionStorage.removeItem("jobData");
-      sessionStorage.setItem("extractionSuccess", "false");
-      sessionStorage.setItem("extractionError", "A network error occurred. Please check your connection and try again.");
-    }
-
-    router.push("/job-form");
-  };
-
-  const isLoading = appState === "loading";
+  // Sent here to log in but already logged in: skip the popup and go where they were headed.
+  if (loggedIn && redirectUrl !== null) redirect(safeRedirect(redirectUrl, DEFAULT_AFTER_LOGIN));
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/20">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
-          <div className="p-2 bg-indigo-600 rounded-xl">
-            <ScanSearch size={20} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-gray-900 leading-none">Job Poster Analyzer</h1>
-            <p className="text-xs text-gray-400 mt-0.5">AI-powered extraction · English, Sinhala & Tamil</p>
-          </div>
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-indigo-600 font-medium bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full">
-            <Sparkles size={12} />
-            Powered by Gemini
-          </div>
-        </div>
-      </header>
+    <main className="flex-1 flex flex-col bg-ikman-bg text-ikman-ink">
+      <SiteHeader>{loggedIn ? <AccountMenu /> : <LoginButton redirectUrl={redirectUrl} />}</SiteHeader>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          {/* Left: Upload panel */}
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Extract Job Details</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Upload a job poster image and our AI will automatically extract all key information.
-              </p>
+      {/* Hero */}
+      <section className="bg-ikman-green text-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-12 sm:pt-8 sm:pb-14 flex flex-col items-center text-center gap-4">
+          <span className="inline-flex items-center gap-1.5 text-sm bg-ikman-green-dark px-3 py-1 rounded-full">
+            <Briefcase size={14} />
+            For ikman.lk Jobs
+          </span>
+          <h1 className="text-3xl sm:text-4xl font-bold leading-tight">
+            Turn a job poster photo into an ikman.lk job ad
+          </h1>
+          <p className="text-lg text-white/90 max-w-xl">
+            Upload a poster in English, Sinhala or Tamil. AI reads the role, location, salary and more, then you
+            review it and post.
+          </p>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-12">
+        <h2 className="text-xl font-bold mb-6">How it works</h2>
+        <ol className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {STEPS.map(({ icon: Icon, title, text }, i) => (
+            <li key={title} className="bg-white rounded-lg shadow-sm p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-md bg-ikman-green/10 text-ikman-green">
+                  <Icon size={20} />
+                </div>
+                <span className="text-xs font-semibold text-gray-400">Step {i + 1}</span>
+              </div>
+              <h3 className="font-bold mb-1">{title}</h3>
+              <p className="text-sm text-gray-600">{text}</p>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-6 bg-white rounded-lg shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-md bg-ikman-yellow/20 text-ikman-brown">
+              <Languages size={20} />
             </div>
-
-            <ImageUploader
-              onImageSelect={handleImageSelect}
-              disabled={isLoading}
-            />
-
-            {selectedFile && !isLoading && (
-              <button
-                onClick={handleExtract}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all duration-150 shadow-md shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ScanSearch size={18} />
-                Extract Job Details
-              </button>
-            )}
-
-            {/* Tips */}
-            {!selectedFile && (
-              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                <p className="text-xs font-semibold text-amber-700 mb-2">💡 Tips for best results</p>
-                <ul className="text-xs text-amber-700 space-y-1 list-disc list-inside">
-                  <li>Use a clear, well-lit photo of the poster</li>
-                  <li>Ensure all text is visible and not cut off</li>
-                  <li>Supports English, Sinhala, and Tamil posters</li>
-                  <li>Higher resolution images give better results</li>
-                </ul>
-              </div>
-            )}
+            <p className="font-bold">Reads posters in three languages</p>
           </div>
-
-          {/* Right: Status panel */}
-          <div className="lg:sticky lg:top-24">
-            {!isLoading && (
-              <div className="border-2 border-dashed border-gray-200 rounded-2xl p-12 text-center bg-white/50">
-                <ScanSearch size={40} className="text-gray-200 mx-auto mb-4" />
-                <p className="text-sm text-gray-400">Extracted job details will appear on the next page</p>
-              </div>
-            )}
-
-            {isLoading && (
-              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
-                <Loader />
-              </div>
-            )}
-          </div>
+          <p className="text-sm text-gray-600 sm:ml-auto">English · සිංහල · தமிழ்</p>
         </div>
-      </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="mt-auto bg-white border-t border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 text-xs text-gray-500">
+          Job Poster Analyzer · Internal tool for creating ikman.lk job listings
+        </div>
+      </footer>
     </main>
   );
 }

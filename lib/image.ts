@@ -2,7 +2,7 @@ const MAX_DIMENSION = 1600;
 const JPEG_QUALITY = 0.85;
 
 /**
- * Downscales an image client-side before upload, so Gemini spends less time on a
+ * Downscales an image client-side before upload, so the vision model spends less time on a
  * phone-camera photo far larger than it needs to be to read poster text. Falls back
  * to the original file untouched if decoding fails (e.g. HEIC isn't decodable via
  * createImageBitmap in most browsers) or the image is already small enough.

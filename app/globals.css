@@ -12,6 +12,20 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ikman.lk brand palette — used as bg-ikman-green, text-ikman-ink, etc. */
+@theme {
+  --color-ikman-green: #149777;
+  --color-ikman-green-dark: #10846f;
+  --color-ikman-yellow: #ffc800;
+  --color-ikman-yellow-dark: #f0bb00;
+  --color-ikman-brown: #673500;
+  --color-ikman-red: #b4352d;
+  --color-ikman-muted: #707676;
+  --color-ikman-border: #e7edee;
+  --color-ikman-ink: #2f3432;
+  --color-ikman-bg: #eef2f1;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

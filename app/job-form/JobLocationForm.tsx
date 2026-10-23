@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { getCategoryNames, getRolesForCategory } from "@/lib/jobCategories";
-import { getDistrictNames, getTownsForDistrict } from "@/lib/locations";
+import { getDistricts, getTowns } from "@/lib/locations";
+import { useLocations } from "@/lib/locations/client";
 import { JOB_TYPES } from "@/lib/jobTypes";
 import { EDUCATION_LEVELS } from "@/lib/education";
 import { isValidSriLankanPhone } from "@/lib/phone";
@@ -39,6 +40,8 @@ export const ABOUT_JOB_FIELDS: FormField[] = [
   },
 ];
 
+const DISABLED_SELECT = "bg-ikman-bg border-ikman-border text-gray-400 cursor-not-allowed";
+
 export const ABOUT_EMPLOYER_FIELDS: FormField[] = [
   { id: "employerName", label: "Employer", placeholder: "Company or employer name" },
   { id: "employerWebsite", label: "Employer Website", placeholder: "e.g. https://www.example.com" },
@@ -57,8 +60,14 @@ interface JobLocationFormProps {
 export default function JobLocationForm({ data, onChange }: JobLocationFormProps) {
   const categoryNames = useMemo(() => getCategoryNames(), []);
   const roleOptions = useMemo(() => getRolesForCategory(data.jobCategory), [data.jobCategory]);
-  const districtNames = useMemo(() => getDistrictNames(), []);
-  const townOptions = useMemo(() => getTownsForDistrict(data.district), [data.district]);
+  // District/town options come from ikman.lk's location tree (loaded once via /api/locations).
+  const locations = useLocations();
+  const locationData = locations.data;
+  const districtNames = useMemo(() => (locationData ? getDistricts(locationData).map((d) => d.name) : []), [locationData]);
+  const townOptions = useMemo(
+    () => (locationData ? getTowns(locationData, data.district).map((t) => t.name) : []),
+    [locationData, data.district]
+  );
 
   const handleCategoryChange = (newCategory: string) => {
     const roles = getRolesForCategory(newCategory);
@@ -68,7 +77,7 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
   };
 
   const handleDistrictChange = (newDistrict: string) => {
-    const towns = getTownsForDistrict(newDistrict);
+    const towns = locationData ? getTowns(locationData, newDistrict).map((t) => t.name) : [];
     const keepTown = towns.includes(data.town) ? data.town : "";
     onChange("district", newDistrict);
     onChange("town", keepTown);
@@ -77,24 +86,24 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
   const isEmpty = (id: string) => !data[id] || data[id].trim() === "";
 
   const fieldClasses = (id: string, invalid = false) =>
-    `w-full px-3 py-2.5 rounded-lg border text-sm text-gray-800 focus:outline-none focus:ring-2 transition-colors ${invalid
-      ? "bg-red-50 border-red-300 focus:ring-red-300 placeholder-red-400"
+    `w-full px-3 py-2.5 rounded border text-sm text-ikman-ink outline-none focus:ring-1 transition-colors ${invalid
+      ? "bg-red-50 border-ikman-red focus:ring-ikman-red placeholder:text-gray-400"
       : isEmpty(id)
-        ? "bg-green-50 border-green-300 focus:ring-green-300 placeholder-green-400"
-        : "bg-white border-gray-300 focus:ring-indigo-300 placeholder-gray-400"
+        ? "bg-ikman-green/10 border-ikman-green/50 focus:border-ikman-green focus:ring-ikman-green placeholder:text-ikman-muted"
+        : "bg-white border-gray-300 focus:border-ikman-green focus:ring-ikman-green placeholder:text-gray-400"
     }`;
 
   return (
     <div className="space-y-6">
       {/* About the Job */}
-      <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-          <h2 className="text-base font-bold text-gray-800">About the Job</h2>
+      <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-ikman-border">
+          <h2 className="text-base font-bold">About the Job</h2>
         </div>
         <div className="px-6 py-5 space-y-4">
           {/* Job Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1.5">Job Category</label>
+            <label className="block text-sm mb-1.5">Job Category</label>
             <select
               value={data.jobCategory || ""}
               onChange={(e) => handleCategoryChange(e.target.value)}
@@ -111,12 +120,12 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
 
           {/* Job Role */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1.5">Job Role</label>
+            <label className="block text-sm mb-1.5">Job Role</label>
             <select
               value={data.jobRole || ""}
               onChange={(e) => onChange("jobRole", e.target.value)}
               disabled={!data.jobCategory}
-              className={`${fieldClasses("jobRole")} ${!data.jobCategory ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed" : ""}`}
+              className={`${fieldClasses("jobRole")} ${!data.jobCategory ? DISABLED_SELECT : ""}`}
             >
               <option value="">
                 {data.jobCategory ? "Select a role" : "Select a job category first"}
@@ -131,29 +140,44 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
 
           {/* District (L1) */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1.5">District</label>
+            <label className="block text-sm mb-1.5">District</label>
             <select
               value={data.district || ""}
               onChange={(e) => handleDistrictChange(e.target.value)}
-              className={fieldClasses("district")}
+              disabled={!locationData}
+              className={`${fieldClasses("district")} ${!locationData ? DISABLED_SELECT : ""}`}
             >
-              <option value="">Select a district</option>
+              <option value="">
+                {locations.status === "loading"
+                  ? "Loading districts…"
+                  : locations.status === "error"
+                    ? "Districts unavailable"
+                    : "Select a district"}
+              </option>
               {districtNames.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
               ))}
             </select>
+            {locations.status === "error" && (
+              <p className="text-xs text-ikman-red mt-1">
+                Couldn&apos;t load districts and towns from ikman.lk.{" "}
+                <button type="button" onClick={locations.retry} className="font-semibold underline">
+                  Try again
+                </button>
+              </p>
+            )}
           </div>
 
           {/* Town (L2) */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1.5">Town</label>
+            <label className="block text-sm mb-1.5">Town</label>
             <select
               value={data.town || ""}
               onChange={(e) => onChange("town", e.target.value)}
-              disabled={!data.district}
-              className={`${fieldClasses("town")} ${!data.district ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed" : ""}`}
+              disabled={!data.district || !locationData}
+              className={`${fieldClasses("town")} ${!data.district || !locationData ? DISABLED_SELECT : ""}`}
             >
               <option value="">
                 {data.district ? "Select a town" : "Select a district first"}
@@ -170,17 +194,17 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
             if (field.type === "textarea") {
               return (
                 <div key={field.id}>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                  <label className="block text-sm mb-1.5">
                     {field.label}
                   </label>
                   <textarea
-                    rows={6}
+                    rows={14}
                     placeholder={field.placeholder}
                     value={data[field.id] || ""}
                     onChange={(e) => onChange(field.id, e.target.value)}
                     className={`${fieldClasses(field.id)} resize-y`}
                   />
-                  <p className="text-xs text-gray-400 mt-1 text-right">
+                  <p className="text-xs text-ikman-muted mt-1 text-right">
                     {data[field.id]?.length ?? 0}/5000
                   </p>
                 </div>
@@ -192,7 +216,7 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
               const [fromPlaceholder, toPlaceholder] = field.rangePlaceholders ?? ["From", "To"];
               return (
                 <div key={field.id}>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                  <label className="block text-sm mb-1.5">
                     {field.label}
                   </label>
                   <div className="flex gap-3">
@@ -220,7 +244,7 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
               const invalid = value.trim() !== "" && !isValidSriLankanPhone(value);
               return (
                 <div key={field.id}>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                  <label className="block text-sm mb-1.5">
                     {field.label}
                   </label>
                   <input
@@ -231,7 +255,7 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
                     className={fieldClasses(field.id, invalid)}
                   />
                   {invalid && (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p className="text-xs text-ikman-red mt-1">
                       Enter a valid Sri Lankan phone number, e.g. 0771234567 or +94771234567.
                     </p>
                   )}
@@ -242,7 +266,7 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
             if (field.type === "date") {
               return (
                 <div key={field.id}>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                  <label className="block text-sm mb-1.5">
                     {field.label}
                   </label>
                   <input
@@ -258,7 +282,7 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
             if (field.type === "select") {
               return (
                 <div key={field.id}>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                  <label className="block text-sm mb-1.5">
                     {field.label}
                   </label>
                   <select
@@ -279,7 +303,7 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
 
             return (
               <div key={field.id}>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                <label className="block text-sm mb-1.5">
                   {field.label}
                 </label>
                 <input
@@ -296,14 +320,14 @@ export default function JobLocationForm({ data, onChange }: JobLocationFormProps
       </section>
 
       {/* About the Employer */}
-      <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-          <h2 className="text-base font-bold text-gray-800">About the Employer</h2>
+      <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-ikman-border">
+          <h2 className="text-base font-bold">About the Employer</h2>
         </div>
         <div className="px-6 py-5 space-y-4">
           {ABOUT_EMPLOYER_FIELDS.map((field) => (
             <div key={field.id}>
-              <label className="block text-sm font-medium text-gray-600 mb-1.5">
+              <label className="block text-sm mb-1.5">
                 {field.label}
               </label>
               <input

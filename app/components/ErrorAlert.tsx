@@ -1,27 +1,36 @@
-import { AlertCircle, RefreshCw } from "lucide-react";
+import type { ReactNode } from "react";
+import { AlertCircle, X } from "lucide-react";
 
 interface ErrorAlertProps {
+  title: string;
   message: string;
-  onRetry: () => void;
+  /** Error code (see ExtractErrorCode) — shown small, for matching against the console log. */
+  code?: string;
+  onDismiss?: () => void;
+  /** Extra content under the message, e.g. an action button. */
+  children?: ReactNode;
 }
 
-export default function ErrorAlert({ message, onRetry }: ErrorAlertProps) {
+export default function ErrorAlert({ title, message, code, onDismiss, children }: ErrorAlertProps) {
   return (
-    <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col items-center text-center gap-4">
-      <div className="p-3 bg-red-100 rounded-full">
-        <AlertCircle size={24} className="text-red-600" />
+    <div role="alert" className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+      <AlertCircle size={18} className="text-ikman-red flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-ikman-red">{title}</p>
+        <p className="text-sm text-ikman-ink mt-0.5 break-words">{message}</p>
+        {code && <p className="text-[11px] font-mono text-ikman-muted mt-1">Error code: {code}</p>}
+        {children}
       </div>
-      <div>
-        <h3 className="font-semibold text-red-800 mb-1">Could not extract job details</h3>
-        <p className="text-sm text-red-600 leading-relaxed max-w-sm">{message}</p>
-      </div>
-      <button
-        onClick={onRetry}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-colors"
-      >
-        <RefreshCw size={14} />
-        Try another image
-      </button>
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="p-0.5 text-gray-400 hover:text-ikman-ink transition-colors"
+        >
+          <X size={16} />
+        </button>
+      )}
     </div>
   );
 }
